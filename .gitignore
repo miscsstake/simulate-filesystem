@@ -1,0 +1,10 @@
+build/
+out/
+target/
+release/
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
