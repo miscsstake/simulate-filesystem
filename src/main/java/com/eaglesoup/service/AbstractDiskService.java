@@ -9,8 +9,8 @@ import com.eaglesoup.exception.BusinessException;
 import com.eaglesoup.util.FATUtil;
 import com.eaglesoup.util.FileUtil;
 import com.eaglesoup.util.SizeUtil;
-import javafx.util.Pair;
 import lombok.SneakyThrows;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -198,7 +198,7 @@ public abstract class AbstractDiskService {
             sectorCount = BootSectorStruct.getInstance().getPerClusterSectors();
             startSectorIndex = startClusterIndex * sectorCount;
         }
-        return new Pair<>(sectorCount, startSectorIndex);
+        return Pair.of(sectorCount, startSectorIndex);
     }
 
     @SneakyThrows
@@ -249,7 +249,7 @@ public abstract class AbstractDiskService {
         if (fileNameBytes.length > 8) {
             throw new BusinessException(fileName + "超过8个字符长度");
         }
-        return new Pair<>(fileNameBytes, fileExtensionBytes);
+        return Pair.of(fileNameBytes, fileExtensionBytes);
     }
 
     protected void tryWriteFileContent(int sectorIndex, byte[] contentBytes, File file, boolean isAppend) throws BusinessException {
