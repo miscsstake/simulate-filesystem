@@ -1,6 +1,6 @@
 package com.eaglesoup.command;
 
-import com.eaglesoup.service.DiskService;
+import com.eaglesoup.service.CustomerDiskService;
 import picocli.CommandLine;
 
 import java.util.List;
@@ -14,7 +14,7 @@ public class CatCommand implements Runnable {
     public void run() {
         for (String fileName : filenameList) {
             try {
-                byte[] result = DiskService.getInstance().cat(fileName);
+                byte[] result = CustomerDiskService.getInstance().cat(fileName);
                 System.out.println(new String(result).trim());
             } catch (Exception exception) {
                 System.out.println(exception.getMessage());

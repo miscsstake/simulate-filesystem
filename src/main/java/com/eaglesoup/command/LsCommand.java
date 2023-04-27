@@ -1,7 +1,7 @@
 package com.eaglesoup.command;
 
 import com.eaglesoup.core.model.DirectoryEntityStruct;
-import com.eaglesoup.service.DiskService;
+import com.eaglesoup.service.CustomerDiskService;
 import com.eaglesoup.util.FileUtil;
 import picocli.CommandLine;
 
@@ -20,7 +20,7 @@ public class LsCommand implements Runnable {
     @Override
     public void run() {
         System.out.println("输出当前目录文件列表：");
-        List<DirectoryEntityStruct> entityStructList = DiskService.getInstance().ls(path);
+        List<DirectoryEntityStruct> entityStructList = CustomerDiskService.getInstance().ls(path);
         if (isFileDetail) {
             outputFileDetail(entityStructList);
         } else {

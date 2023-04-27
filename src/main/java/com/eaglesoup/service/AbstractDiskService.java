@@ -1,7 +1,7 @@
 package com.eaglesoup.service;
 
 import com.eaglesoup.core.CoreFAT16XDiskService;
-import com.eaglesoup.core.enums.CreateFileSectorTypeEnum;
+import com.eaglesoup.enums.CreateFileSectorTypeEnum;
 import com.eaglesoup.core.model.BootSectorStruct;
 import com.eaglesoup.core.model.DirectoryEntityStruct;
 import com.eaglesoup.dto.CreateFileSectorIndexDto;
@@ -67,8 +67,6 @@ public abstract class AbstractDiskService {
     @SneakyThrows
     protected int tryCreateFile(File file, boolean isFile) {
         //校验文件格式
-
-
         String[] fileNameArr = file.getPath().split(File.separator);
         int startCluster = 8; //rootDirectory对应的
         int sectorIndex = 0;

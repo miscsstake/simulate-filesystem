@@ -1,7 +1,7 @@
 package com.eaglesoup.command;
 
 import com.eaglesoup.exception.BusinessException;
-import com.eaglesoup.service.DiskService;
+import com.eaglesoup.service.CustomerDiskService;
 import picocli.CommandLine;
 
 
@@ -15,7 +15,7 @@ public class CdCommand implements Runnable {
      */
     public void run() {
         try {
-            DiskService.getInstance().cd(path);
+            CustomerDiskService.getInstance().cd(path);
         } catch (BusinessException e) {
             System.out.println(e.getMessage());
         }

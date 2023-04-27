@@ -1,11 +1,12 @@
 package com.eaglesoup.command;
 
 import com.eaglesoup.exception.BusinessException;
-import com.eaglesoup.service.DiskService;
+import com.eaglesoup.service.CustomerDiskService;
 import picocli.CommandLine;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.concurrent.Callable;
 
 /**
  * echo > a.txt
@@ -13,18 +14,18 @@ import java.util.List;
  * echo aa bb > a.txt b c d
  */
 @CommandLine.Command(name = "echo", description = "回显输入的内容")
-public class EchoCommand implements Runnable {
+public class EchoCommand implements Callable<String> {
     @CommandLine.Parameters(description = "写入的内容不能为空")
     List<String> content;
 
-    public void run() {
+    @Override
+    public String call() {
         if (!content.contains(">") && !content.contains(">>")) {
-            StringBuffer str1 = new StringBuffer();
+            StringBuilder str1 = new StringBuilder();
             for (String s : content) {
-                str1.append(s + " ");
+                str1.append(s).append(" ");
             }
-            System.out.println(str1.toString());
-            return;
+            return str1.toString();
         }
 
         boolean isAppend = content.contains(">>");
@@ -32,10 +33,11 @@ public class EchoCommand implements Runnable {
         byte[] fileContent = buildContent(isAppend);
         //写入文件内容
         try {
-            DiskService.getInstance().echo(fileContent, fileName, isAppend);
+            CustomerDiskService.getInstance().echo(fileContent, fileName, isAppend);
         } catch (BusinessException e) {
-            System.out.println(e.getMessage());
+            return e.getMessage();
         }
+        return "";
     }
 
     private String getFileName(boolean isAppend) {
@@ -73,4 +75,5 @@ public class EchoCommand implements Runnable {
         }
         return fileContentBuilder.toString().getBytes(StandardCharsets.UTF_8);
     }
+
 }

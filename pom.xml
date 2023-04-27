@@ -18,6 +18,10 @@
         <hutool.version>5.8.9</hutool.version>
         <log4j12.verison>2.0.6</log4j12.verison>
         <commons-lang3.version>3.12.0</commons-lang3.version>
+        <jline.version>3.23.0</jline.version>
+        <sshd-mina.version>2.9.2</sshd-mina.version>
+        <commons-pool2.version>2.11.1</commons-pool2.version>
+        <commons-io.version>2.11.0</commons-io.version>
     </properties>
 
     <dependencies>
@@ -50,6 +54,37 @@
             <version>${commons-lang3.version}</version>
         </dependency>
 
+        <!--命令行交互的组件-->
+        <dependency>
+            <groupId>org.jline</groupId>
+            <artifactId>jline</artifactId>
+            <version>${jline.version}</version>
+        </dependency>
+
+        <!--ssh组件-->
+        <dependency>
+            <groupId>org.apache.sshd</groupId>
+            <artifactId>sshd-mina</artifactId>
+            <version>${sshd-mina.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.sshd</groupId>
+            <artifactId>sshd-scp</artifactId>
+            <version>2.9.0</version>
+        </dependency>
+
+        <!--实现对象池化的组件-->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-pool2</artifactId>
+            <version>${commons-pool2.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>${commons-io.version}</version>
+        </dependency>
+
     </dependencies>
 
     <build>
@@ -76,7 +111,7 @@
                             <transformers>
                                 <transformer
                                         implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>com.eaglesoup.App</mainClass>
+                                    <mainClass>com.eaglesoup.SshApp</mainClass>
                                 </transformer>
                             </transformers>
                         </configuration>

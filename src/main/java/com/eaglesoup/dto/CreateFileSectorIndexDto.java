@@ -1,6 +1,6 @@
 package com.eaglesoup.dto;
 
-import com.eaglesoup.core.enums.CreateFileSectorTypeEnum;
+import com.eaglesoup.enums.CreateFileSectorTypeEnum;
 import lombok.Builder;
 import lombok.Data;
 

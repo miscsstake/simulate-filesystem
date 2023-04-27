@@ -1,4 +1,4 @@
-package com.eaglesoup.core.enums;
+package com.eaglesoup.enums;
 
 public enum CreateFileSectorTypeEnum {
     AVAILABLE_SECTOR(0, "创建文件或目录"),

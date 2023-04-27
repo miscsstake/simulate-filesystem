@@ -1,6 +1,6 @@
 package com.eaglesoup.command;
 
-import com.eaglesoup.service.DiskService;
+import com.eaglesoup.service.CustomerDiskService;
 import picocli.CommandLine;
 
 import java.util.List;
@@ -13,7 +13,7 @@ public class TouchCommand implements Runnable {
     @Override
     public void run() {
         for (String filename : filenameList) {
-            DiskService.getInstance().touch(filename);
+            CustomerDiskService.getInstance().touch(filename);
         }
     }
 }

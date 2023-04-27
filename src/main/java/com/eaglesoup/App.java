@@ -15,6 +15,8 @@ public class App {
     private static final String FILE_NAME = "/tmp/a.txt";
 
     public static void main(String[] args) {
+        new File("/tmp/a.txt");
+
         createFile();
         //接收输入
         Scanner scan = new Scanner(System.in);
@@ -41,14 +43,14 @@ public class App {
                 System.out.println("文件创建成功！");
             else
                 System.out.println("出错了，该文件已经存在。");
-        } catch (IOException ioe) {
-            ioe.printStackTrace();
+        } catch (IOException io) {
+            io.printStackTrace();
         }
 
     }
 
     private static void runCommand(String commandString) {
-        Map<String, Class> commandClass = new HashMap<>();
+        Map<String, Class<?>> commandClass = new HashMap<>();
         commandClass.put("format", FormatCommand.class);
         commandClass.put("mkdir", MkdirCommand.class);
         commandClass.put("touch", TouchCommand.class);
@@ -63,7 +65,10 @@ public class App {
                 String[] arr = commandString.split("\\s+");
                 try {
                     arr = arr.length > 1 ? Arrays.copyOfRange(arr, 1, arr.length) : new String[0];
-                    new CommandLine(commandClass.get(k).newInstance()).execute(arr);
+                    CommandLine commandLine = new CommandLine(commandClass.get(k).newInstance());
+                    commandLine.execute(arr);
+                    Object result = commandLine.getExecutionResult();
+                    System.out.println(result);
                 } catch (IllegalAccessException | InstantiationException e) {
                     e.printStackTrace();
                 }

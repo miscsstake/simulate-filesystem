@@ -1,7 +1,7 @@
 package com.eaglesoup.service;
 
 import com.eaglesoup.core.CoreFAT16XDiskService;
-import com.eaglesoup.core.enums.CreateFileSectorTypeEnum;
+import com.eaglesoup.enums.CreateFileSectorTypeEnum;
 import com.eaglesoup.core.model.BootSectorStruct;
 import com.eaglesoup.core.model.DirectoryEntityStruct;
 import com.eaglesoup.core.model.FAT16XStruct;
@@ -13,17 +13,17 @@ import lombok.SneakyThrows;
 import java.io.File;
 import java.util.List;
 
-public class DiskService extends AbstractDiskService {
-    private static final DiskService instance = new DiskService();
+public class CustomerDiskService extends AbstractDiskService {
+    private static final CustomerDiskService instance = new CustomerDiskService();
 
-    private DiskService() {
+    private CustomerDiskService() {
     }
 
-    public static DiskService getInstance() {
+    public static CustomerDiskService getInstance() {
         return instance;
     }
 
-    public void format() {
+    public String format() {
         byte[] boot = BootSectorStruct.getInstance().format();
         //fat共占有8个簇，8*64 = 512个扇区
         byte[] fat = FAT16XStruct.getInstance().format();
@@ -39,6 +39,7 @@ public class DiskService extends AbstractDiskService {
 
         //设置信息
         FileUtil.setCurrentPath("/");
+        return "format success!";
     }
 
     /**

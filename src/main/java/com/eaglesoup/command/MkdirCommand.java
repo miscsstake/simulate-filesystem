@@ -1,7 +1,7 @@
 package com.eaglesoup.command;
 
 
-import com.eaglesoup.service.DiskService;
+import com.eaglesoup.service.CustomerDiskService;
 import picocli.CommandLine;
 
 import java.util.List;
@@ -13,7 +13,7 @@ public class MkdirCommand implements Runnable {
 
     public void run() {
         for (String dirname : dirNames) {
-            DiskService.getInstance().mkdir(dirname);
+            CustomerDiskService.getInstance().mkdir(dirname);
         }
     }
 }
