@@ -14,10 +14,7 @@ import com.eaglesoup.util.LockUtil;
 import com.eaglesoup.util.SizeUtil;
 import lombok.SneakyThrows;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.List;
+import java.util.*;
 
 /**
  * 具体的fat16文件系统层
@@ -30,15 +27,16 @@ public class FAT16FileSystem implements IFileSystem {
     //设备层类：CoreFAT16XDiskService
     @Override
     public FileModeDTO open(String fileName, FileModeEnum fileModeEnum) {
-//        if (FileModeEnum.APPEND_MODE == fileModeEnum) {
-//            LockUtil.getInstance().readLock().lock();
-//        } else {
-//            LockUtil.getInstance().readLock().unlock();
-//            LockUtil.getInstance().writeLock().lock();
-//        }
+        if (FileModeEnum.READ_MODE == fileModeEnum) {
+            LockUtil.getInstance().readLock().lock();
+        } else if (FileModeEnum.APPEND_MODE == fileModeEnum) {
+            LockUtil.getInstance().writeLock().lock();
+        } else if (FileModeEnum.WRITE_MODE == fileModeEnum) {
+            LockUtil.getInstance().writeLock().lock();
+        }
         this.fileModeDTO = FileModeDTO.builder()
                 .filename(fileName)
-                .fileMode(fileModeEnum.getMode())
+                .fileMode(fileModeEnum == null ? null : fileModeEnum.getMode())
                 .build();
         return this.fileModeDTO;
     }
@@ -53,7 +51,7 @@ public class FAT16FileSystem implements IFileSystem {
         if ("/".equals(fileModeDTO.getFilename())) {
             return true;
         }
-        DirectoryEntityDto dirEntityDto = tryCreateFile(fileModeDTO.getFilename());
+        DirectoryEntityDto dirEntityDto = intactFileLocationInfo(fileModeDTO.getFilename());
         return dirEntityDto.getDirectoryEntityStruct() != null;
     }
 
@@ -61,7 +59,7 @@ public class FAT16FileSystem implements IFileSystem {
     @Override
     public byte[] read() {
         String filename = fileModeDTO.getFilename();
-        DirectoryEntityDto dirEntityDto = tryCreateFile(filename);
+        DirectoryEntityDto dirEntityDto = intactFileLocationInfo(filename);
         if (dirEntityDto.getDirectoryEntityStruct() == null) {
             //文件不存在
             throw new BusinessException("文件不存在");
@@ -81,7 +79,7 @@ public class FAT16FileSystem implements IFileSystem {
     public boolean write(byte[] bytes) {
         String filename = fileModeDTO.getFilename();
         String lastFilename = filename.substring(filename.lastIndexOf("/") + 1);
-        DirectoryEntityDto dirEntityDto = tryCreateFile(filename);
+        DirectoryEntityDto dirEntityDto = intactFileLocationInfo(filename);
         int fileClusterIndex;
         int oldFileSize = 0;
         boolean isAppend = FileModeEnum.APPEND_MODE.getMode().equals(fileModeDTO.getFileMode());
@@ -115,7 +113,7 @@ public class FAT16FileSystem implements IFileSystem {
     @Override
     public boolean mkdir() {
         String filename = fileModeDTO.getFilename();
-        DirectoryEntityDto dirEntityDto = tryCreateFile(filename);
+        DirectoryEntityDto dirEntityDto = intactFileLocationInfo(filename);
         if (dirEntityDto.getDirectoryEntityStruct() == null) {
             //创建目录
             filename = filename.substring(filename.lastIndexOf("/") + 1);
@@ -134,7 +132,7 @@ public class FAT16FileSystem implements IFileSystem {
             startSectorIndex = FATUtil.rootDirectorySectorIndex();
             sectorCount = FATUtil.rootDirectorySize() / bootSectorStruct.getPerSectorBytes();
         } else {
-            DirectoryEntityDto dirEntityDto = tryCreateFile(fileModeDTO.getFilename());
+            DirectoryEntityDto dirEntityDto = intactFileLocationInfo(fileModeDTO.getFilename());
             if (dirEntityDto.getDirectoryEntityStruct() == null) {
                 return result;
             }
@@ -166,7 +164,7 @@ public class FAT16FileSystem implements IFileSystem {
         if ("/".equals(filename)) {
             return true;
         }
-        DirectoryEntityDto dirEntityDto = tryCreateFile(filename);
+        DirectoryEntityDto dirEntityDto = intactFileLocationInfo(filename);
         DirectoryEntityStruct struct = dirEntityDto.getDirectoryEntityStruct();
         if (struct == null) {
             throw new BusinessException("文件不存在");
@@ -208,7 +206,7 @@ public class FAT16FileSystem implements IFileSystem {
     }
 
     @SneakyThrows
-    public DirectoryEntityDto tryCreateFile(String filename) {
+    public DirectoryEntityDto intactFileLocationInfo(String filename) {
         // "/tmp/aa" -> ["", "/tmp", "aa"]
         String[] fileNameArr = filename.split("/");
         int startSectorIndex = FATUtil.rootDirectorySectorIndex();
@@ -217,7 +215,7 @@ public class FAT16FileSystem implements IFileSystem {
             if (fileNameArr[i].isEmpty()) {
                 continue;
             }
-            DirectoryEntityDto dirEntityDto = findFilePosition2(startSectorIndex, sectorCount, fileNameArr[i]);
+            DirectoryEntityDto dirEntityDto = fileLocationInfo(startSectorIndex, sectorCount, fileNameArr[i]);
             //最后一个
             if (i == fileNameArr.length - 1) {
                 return dirEntityDto;
@@ -235,7 +233,7 @@ public class FAT16FileSystem implements IFileSystem {
     }
 
     @SneakyThrows
-    private DirectoryEntityDto findFilePosition2(int startSectorIndex, int sectorCount, String fileName) {
+    private DirectoryEntityDto fileLocationInfo(int startSectorIndex, int sectorCount, String fileName) {
         DirectoryEntityDto directoryEntityDto = DirectoryEntityDto.builder().build();
         for (int i = 0; i < sectorCount; i++) {
             byte[] buffer = idisk.readSector(startSectorIndex + i);
@@ -315,7 +313,6 @@ public class FAT16FileSystem implements IFileSystem {
 
     @SneakyThrows
     private void writeBigSize(long size, int sectorIndex, byte[] buffer) {
-        //todo buffer大小是否是 512 bytes
         if (buffer != null) {
             idisk.writeSector(sectorIndex, buffer);
             return;

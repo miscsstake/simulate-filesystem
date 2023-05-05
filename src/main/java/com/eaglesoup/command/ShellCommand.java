@@ -3,10 +3,12 @@ package com.eaglesoup.command;
 import com.eaglesoup.exception.BusinessException;
 import com.eaglesoup.service.FileApiService;
 import com.eaglesoup.util.FileUtil;
+import com.eaglesoup.util.LockUtil;
 import lombok.SneakyThrows;
 import org.jline.reader.EndOfFileException;
 import org.jline.reader.LineReaderBuilder;
 import org.jline.reader.UserInterruptException;
+import org.jline.reader.impl.DefaultParser;
 import org.jline.reader.impl.LineReaderImpl;
 import org.jline.terminal.Attributes;
 import org.jline.terminal.Terminal;
@@ -42,8 +44,11 @@ public class ShellCommand {
         Attributes attr = terminal.getAttributes();
         terminal.setAttributes(attr);
 
+        DefaultParser parser = new DefaultParser();
+        parser.setEscapeChars(null);
         LineReaderImpl lineReader = (LineReaderImpl) LineReaderBuilder.builder()
                 .terminal(terminal)
+                .parser(parser)
                 .build();
         handleInputLine(userName, lineReader, exitRunnable);
     }
@@ -68,15 +73,28 @@ public class ShellCommand {
             } catch (EndOfFileException e) {
                 LOGGER.info("\n byte");
                 return;
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 print(out, e.getMessage());
+            } finally {
+                if (LockUtil.getInstance().isWriteLockedByCurrentThread()) {
+                    LockUtil.getInstance().writeLock().unlock();
+                }
+                int readLock = LockUtil.getInstance().getReadHoldCount();
+                while (readLock > 0) {
+                    LockUtil.getInstance().readLock().unlock();
+                    readLock--;
+                }
             }
         }
     }
 
     private void print(OutputStream out, String result) throws IOException {
-        result += "\r\n";
-        out.write(result.getBytes());
+        String output = "";
+        String[] arr = result.split("\\\\n");
+        for (String str : arr) {
+            output = output + str + "\r\n";
+        }
+        out.write(output.getBytes());
         out.flush();
     }
 
@@ -99,11 +117,12 @@ public class ShellCommand {
                 .addSubcommand(new EchoCommand(path))
                 .addSubcommand(new RmCommand(path))
                 .addSubcommand(new HelpCommand());
-        commandLine.execute(commandString.split("\\s+"));
-        List<CommandLine> commandLineList = commandLine.getParseResult().asCommandLineList();
-        if (commandLineList.size() == 1) {
+        String[] commandArr = commandString.split("\\s+");
+        if (!commandLine.getSubcommands().containsKey(commandArr[0])) {
             throw new BusinessException("不支持的命令");
         }
+        commandLine.execute(commandArr);
+        List<CommandLine> commandLineList = commandLine.getParseResult().asCommandLineList();
         commandLine = commandLineList.get(commandLineList.size() - 1);
         boolean isAppend = commandString.contains(">>");
         afterCommand(commandLine, myExceptionHandle, isAppend);

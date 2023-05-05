@@ -72,6 +72,7 @@
     <junit.version>4.13.2</junit.version>
     <sshd-mina.version>2.9.2</sshd-mina.version>
     <commons-lang3.version>3.12.0</commons-lang3.version>
+    <spring-aop.version>6.0.8</spring-aop.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <pocicli.verson>4.7.1</pocicli.verson>
   </properties>
