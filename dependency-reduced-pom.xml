@@ -63,12 +63,16 @@
     </dependency>
   </dependencies>
   <properties>
-    <commons-lang3.version>3.12.0</commons-lang3.version>
-    <hutool.version>5.8.9</hutool.version>
-    <log4j12.verison>2.0.6</log4j12.verison>
-    <pocicli.verson>4.7.1</pocicli.verson>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <commons-pool2.version>2.11.1</commons-pool2.version>
     <lombok.version>1.18.26</lombok.version>
+    <hutool.version>5.8.9</hutool.version>
+    <commons-io.version>2.11.0</commons-io.version>
+    <log4j12.verison>2.0.6</log4j12.verison>
+    <jline.version>3.23.0</jline.version>
     <junit.version>4.13.2</junit.version>
+    <sshd-mina.version>2.9.2</sshd-mina.version>
+    <commons-lang3.version>3.12.0</commons-lang3.version>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <pocicli.verson>4.7.1</pocicli.verson>
   </properties>
 </project>

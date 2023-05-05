@@ -3,6 +3,7 @@ package com.eaglesoup.core.model;
 import com.eaglesoup.util.SizeUtil;
 import lombok.Data;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
 @Data
@@ -68,7 +69,7 @@ public class BootSectorStruct {
     private byte[] bootstrapCode = new byte[448];
 
     //签名字段
-    private short bootSectorSignature = (short) 0xAA55;
+    private byte[] bootSectorSignature = {(byte) 0xAA, (byte) 0x55};
 
     //饿汉模式创建单例
     private static final BootSectorStruct instance = new BootSectorStruct();
@@ -115,11 +116,12 @@ public class BootSectorStruct {
         //fileSystemType
         byte[] tmpFileSystemType = "FAT16X".getBytes(StandardCharsets.UTF_8);
         System.arraycopy(tmpFileSystemType, 0, fileSystemType, 0, tmpFileSystemType.length);
+        //fileSystemType
         System.arraycopy(fileSystemType, 0, result, 0x0036, 8);
         //bootstrapCode
         System.arraycopy(bootstrapCode, 0, result, 0x003E, 448);
         //bootSectorSignature
-        System.arraycopy(bootstrapCode, 0, result, 0x01FE, 2);
+        System.arraycopy(bootSectorSignature, 0, result, 0x01FE, 2);
         return result;
     }
 }

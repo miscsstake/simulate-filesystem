@@ -1,24 +1,24 @@
 package com.eaglesoup.command;
 
-import com.eaglesoup.service.DiskService;
+import com.eaglesoup.service.FileApiService;
+import com.eaglesoup.util.FileUtil;
 import picocli.CommandLine;
 
-import java.util.List;
+import java.util.concurrent.Callable;
 
-@CommandLine.Command(name = "cat", helpCommand = true, description = "创建目录")
-public class CatCommand implements Runnable {
-    @CommandLine.Parameters(description = "文件名称，支持多个文件")
-    List<String> filenameList;
+@CommandLine.Command(name = "cat", helpCommand = true, description = "查看文件内容")
+public class CatCommand extends AbsCommand implements Callable<String> {
+    public CatCommand(String path) {
+        super(path);
+    }
+
+    @CommandLine.Parameters(description = "文件名称")
+    String filename;
 
     @Override
-    public void run() {
-        for (String fileName : filenameList) {
-            try {
-                byte[] result = DiskService.getInstance().cat(fileName);
-                System.out.println(new String(result).trim());
-            } catch (Exception exception) {
-                System.out.println(exception.getMessage());
-            }
-        }
+    public String call() {
+        String fullFilename = FileUtil.fullFilename(this.getPath(), filename);
+        byte[] result = new FileApiService(fullFilename).read();
+        return new String(result);
     }
 }
