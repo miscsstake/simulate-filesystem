@@ -22,7 +22,6 @@
         <sshd-mina.version>2.9.2</sshd-mina.version>
         <commons-pool2.version>2.11.1</commons-pool2.version>
         <commons-io.version>2.11.0</commons-io.version>
-        <spring-aop.version>6.0.8</spring-aop.version>
     </properties>
 
     <dependencies>
@@ -68,30 +67,11 @@
             <artifactId>sshd-mina</artifactId>
             <version>${sshd-mina.version}</version>
         </dependency>
-        <!--        <dependency>-->
-        <!--            <groupId>org.apache.sshd</groupId>-->
-        <!--            <artifactId>sshd-scp</artifactId>-->
-        <!--            <version>2.9.0</version>-->
-        <!--        </dependency>-->
-
-        <!--实现对象池化的组件-->
-        <!--        <dependency>-->
-        <!--            <groupId>org.apache.commons</groupId>-->
-        <!--            <artifactId>commons-pool2</artifactId>-->
-        <!--            <version>${commons-pool2.version}</version>-->
-        <!--        </dependency>-->
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
             <version>${commons-io.version}</version>
         </dependency>
-
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-aop</artifactId>
-            <version>${spring-aop.version}</version>
-        </dependency>
-
     </dependencies>
 
     <build>
