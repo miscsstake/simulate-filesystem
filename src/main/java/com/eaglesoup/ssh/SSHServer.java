@@ -30,7 +30,7 @@ public class SSHServer {
     }
 
     public void startServer() throws IOException {
-        LOGGER.info("SSHServer started on Port: {}", sshServer.getPort());
+//        LOGGER.info("SSHServer started on Port: {}", sshServer.getPort());
         System.out.println("SSHServer started on Port:" + sshServer.getPort());
         sshServer.start();
     }
