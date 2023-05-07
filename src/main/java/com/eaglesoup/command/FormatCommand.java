@@ -1,12 +1,19 @@
 package com.eaglesoup.command;
 
-import com.eaglesoup.service.DiskService;
+import com.eaglesoup.service.FileApiService;
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "format", helpCommand = true, description = "创建目录")
-public class FormatCommand implements Runnable {
+import java.util.concurrent.Callable;
+
+@CommandLine.Command(name = "format", helpCommand = true, description = "格式化")
+public class FormatCommand extends AbsCommand implements Callable<String> {
+    public FormatCommand(String path) {
+        super(path);
+    }
+
     @Override
-    public void run() {
-        DiskService.getInstance().format();
+    public String call() {
+        new FileApiService("/").format();
+        return "format success!";
     }
 }

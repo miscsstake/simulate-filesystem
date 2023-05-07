@@ -34,10 +34,8 @@ public class DirectoryEntityStruct {
     //如果是文件，表示文件字节数，最大 2 的 32 次方。如果不是文件，此值为 0
     private int fileSize;
 
-
     public DirectoryEntityStruct() {
     }
-
 
     //字节大小：32个字节
     public static final int ENTITY_SIZE = 32;

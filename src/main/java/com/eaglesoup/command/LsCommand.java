@@ -1,65 +1,36 @@
 package com.eaglesoup.command;
 
 import com.eaglesoup.core.model.DirectoryEntityStruct;
-import com.eaglesoup.service.DiskService;
+import com.eaglesoup.service.FileApiService;
 import com.eaglesoup.util.FileUtil;
+import org.apache.commons.lang3.StringUtils;
 import picocli.CommandLine;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
 
-@CommandLine.Command
-public class LsCommand implements Runnable {
-    @CommandLine.Option(names = "-l", description = "展示文件详细信息")
-    private boolean isFileDetail;
+@CommandLine.Command(name = "ll")
+public class LsCommand extends AbsCommand implements Callable<String> {
+    @CommandLine.Parameters(description = "文件名称", defaultValue = "")
+    String filepath;
 
-    @CommandLine.Parameters(description = "要查看的目录", defaultValue = "")
-    String path;
+    public LsCommand(String path) {
+        super(path);
+    }
 
     @Override
-    public void run() {
-        System.out.println("输出当前目录文件列表：");
-        List<DirectoryEntityStruct> entityStructList = DiskService.getInstance().ls(path);
-        if (isFileDetail) {
-            outputFileDetail(entityStructList);
-        } else {
-            outputFileName(entityStructList);
+    public String call() {
+        String fullFilename = FileUtil.fullFilename(this.getPath(), filepath);
+        List<DirectoryEntityStruct> entityStructList = new FileApiService(fullFilename).listFiles();
+        List<String> response = new ArrayList<>();
+        for (DirectoryEntityStruct struct : entityStructList) {
+            long createTime = (long) struct.getCreationTimestamp() * 1000;
+            String humanCreateTime = new SimpleDateFormat("yyyy/MM/dd").format(createTime);
+            String filename = new String(struct.getFilename()).trim();
+            response.add(String.format("%s %s %s\r", struct.getFileSize(), humanCreateTime, filename));
         }
-    }
-
-    private void outputFileName(List<DirectoryEntityStruct> entityStructList) {
-        StringBuilder builder = new StringBuilder();
-        for (DirectoryEntityStruct entityStruct : entityStructList) {
-            String fileName = new String(entityStruct.getFilename()).trim();
-            if (!FileUtil.isDir(entityStruct.getAttribute())) {
-                String extension = new String(entityStruct.getFilenameExtension()).trim();
-                if (!"".equals(extension)) {
-                    fileName += "." + extension;
-                }
-            }
-            builder.append(fileName).append(" ");
-        }
-        if (builder.length() > 0) System.out.println(builder);
-    }
-
-    private void outputFileDetail(List<DirectoryEntityStruct> entityStructList) {
-        List<String> list = new ArrayList<>();
-        for (DirectoryEntityStruct entityStruct : entityStructList) {
-            String fileName = new String(entityStruct.getFilename()).trim();
-            if (!FileUtil.isDir(entityStruct.getAttribute())) {
-                String extension = new String(entityStruct.getFilenameExtension()).trim();
-                if (!"".equals(extension)) {
-                    fileName += "." + extension;
-                }
-            }
-            long createTime = (long) entityStruct.getCreationTimestamp() * 1000;
-            String humanCreateTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(createTime);
-            String fileAttr = String.format("%s %s %s", entityStruct.getFileSize(), humanCreateTime, fileName);
-            list.add(fileAttr);
-        }
-        for (String fileAttr : list) {
-            System.out.println(fileAttr);
-        }
+        return StringUtils.join(response, "\n");
     }
 }

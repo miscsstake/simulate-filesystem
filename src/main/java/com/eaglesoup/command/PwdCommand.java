@@ -1,13 +1,17 @@
 package com.eaglesoup.command;
 
-import com.eaglesoup.service.DiskService;
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "pwd", helpCommand = true, description = "创建目录")
-public class PwdCommand implements Runnable {
+import java.util.concurrent.Callable;
+
+@CommandLine.Command(name = "pwd", helpCommand = true, description = "显示当前目录路径")
+public class PwdCommand extends AbsCommand implements Callable<String> {
+    public PwdCommand(String path) {
+        super(path);
+    }
+
     @Override
-    public void run() {
-        String currentPath = DiskService.getInstance().pwd();
-        System.out.println(currentPath);
+    public String call() {
+        return getPath();
     }
 }
