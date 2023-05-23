@@ -3,8 +3,8 @@ package com.eaglesoup.command;
 import com.eaglesoup.exception.BusinessException;
 import com.eaglesoup.service.FileApiService;
 import com.eaglesoup.util.FileUtil;
-import com.eaglesoup.util.LockUtil;
 import lombok.SneakyThrows;
+import org.apache.commons.lang3.StringUtils;
 import org.jline.reader.EndOfFileException;
 import org.jline.reader.LineReaderBuilder;
 import org.jline.reader.UserInterruptException;
@@ -75,26 +75,20 @@ public class ShellCommand {
                 return;
             } catch (Throwable e) {
                 print(out, e.getMessage());
-            } finally {
-                if (LockUtil.getInstance().isWriteLockedByCurrentThread()) {
-                    LockUtil.getInstance().writeLock().unlock();
-                }
-                int readLock = LockUtil.getInstance().getReadHoldCount();
-                while (readLock > 0) {
-                    LockUtil.getInstance().readLock().unlock();
-                    readLock--;
-                }
             }
         }
     }
 
     private void print(OutputStream out, String result) throws IOException {
-        String output = "";
+        StringBuilder output = new StringBuilder();
         String[] arr = result.split("\\\\n");
         for (String str : arr) {
-            output = output + str + "\r\n";
+            output.append(str).append("\r\n");
         }
-        out.write(output.getBytes());
+        if (result.endsWith("\\n")) {
+            output.append("\r\n");
+        }
+        out.write(output.toString().getBytes());
         out.flush();
     }
 
@@ -117,7 +111,7 @@ public class ShellCommand {
                 .addSubcommand(new EchoCommand(path))
                 .addSubcommand(new RmCommand(path))
                 .addSubcommand(new HelpCommand());
-        String[] commandArr = commandString.split("\\s+");
+        String[] commandArr = commandString.split("\\s+(?=([^\"]*\"[^\"]*\")*[^\"]*$)"); // 将输入的字符串按照空格分割成命令数组
         if (!commandLine.getSubcommands().containsKey(commandArr[0])) {
             throw new BusinessException("不支持的命令");
         }
@@ -131,6 +125,8 @@ public class ShellCommand {
     @SneakyThrows
     private void afterCommand(CommandLine commandLine, MyExceptionHandle myExceptionHandle, boolean isAppend) {
         String result = commandLine.getExecutionResult();
+        result = StringUtils.removeStart(result, "\"");
+        result = StringUtils.removeEnd(result, "\"");
         if (myExceptionHandle.exception != null) {
             //执行过程报错
             print(out, myExceptionHandle.exception.getMessage());
