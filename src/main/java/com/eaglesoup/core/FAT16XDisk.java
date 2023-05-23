@@ -1,5 +1,7 @@
 package com.eaglesoup.core;
 
+import com.eaglesoup.util.LockUtil;
+
 import java.io.*;
 
 public class FAT16XDisk implements IDisk {
@@ -20,23 +22,28 @@ public class FAT16XDisk implements IDisk {
 
     @Override
     public byte[] readSector(int sectorIdx) {
-        byte[] sectorData = new byte[sectorSize()];
-        try {
-            disk.seek((long) sectorIdx * sectorSize());
-            disk.readFully(sectorData);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        return sectorData;
+        return LockUtil.rLock(() -> {
+            byte[] sectorData = new byte[sectorSize()];
+            try {
+                disk.seek((long) sectorIdx * sectorSize());
+                disk.readFully(sectorData);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            return sectorData;
+        });
     }
 
     @Override
     public void writeSector(int sectorIdx, byte[] sectorData) {
-        try {
-            disk.seek((long) sectorIdx * sectorSize());
-            disk.write(sectorData);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        LockUtil.wLock(() -> {
+            try {
+                disk.seek((long) sectorIdx * sectorSize());
+                disk.write(sectorData);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            return "success!";
+        });
     }
 }

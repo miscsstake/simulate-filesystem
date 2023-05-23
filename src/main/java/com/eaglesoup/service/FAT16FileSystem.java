@@ -10,7 +10,6 @@ import com.eaglesoup.dto.FileModeDTO;
 import com.eaglesoup.enums.FileModeEnum;
 import com.eaglesoup.exception.BusinessException;
 import com.eaglesoup.util.FATUtil;
-import com.eaglesoup.util.LockUtil;
 import com.eaglesoup.util.SizeUtil;
 import lombok.SneakyThrows;
 
@@ -27,13 +26,6 @@ public class FAT16FileSystem implements IFileSystem {
     //设备层类：CoreFAT16XDiskService
     @Override
     public FileModeDTO open(String fileName, FileModeEnum fileModeEnum) {
-        if (FileModeEnum.READ_MODE == fileModeEnum) {
-            LockUtil.getInstance().readLock().lock();
-        } else if (FileModeEnum.APPEND_MODE == fileModeEnum) {
-            LockUtil.getInstance().writeLock().lock();
-        } else if (FileModeEnum.WRITE_MODE == fileModeEnum) {
-            LockUtil.getInstance().writeLock().lock();
-        }
         this.fileModeDTO = FileModeDTO.builder()
                 .filename(fileName)
                 .fileMode(fileModeEnum == null ? null : fileModeEnum.getMode())
