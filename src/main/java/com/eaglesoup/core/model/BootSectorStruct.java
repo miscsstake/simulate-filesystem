@@ -3,7 +3,6 @@ package com.eaglesoup.core.model;
 import com.eaglesoup.util.SizeUtil;
 import lombok.Data;
 
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
 @Data
