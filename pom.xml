@@ -79,8 +79,8 @@
         <resources>
             <!-- 把src/main/resources目录下所有的文件拷贝到conf目录中 -->
             <resource>
-                <directory>src/main/resources</directory>
-                <targetPath>${project.build.directory}/conf</targetPath>
+                <directoryEntity>src/main/resources</directoryEntity>
+                <targetPath>${project.build.directoryEntity}/conf</targetPath>
             </resource>
         </resources>
 

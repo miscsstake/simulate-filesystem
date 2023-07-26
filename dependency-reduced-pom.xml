@@ -9,8 +9,8 @@
   <build>
     <resources>
       <resource>
-        <targetPath>${project.build.directory}/conf</targetPath>
-        <directory>src/main/resources</directory>
+        <targetPath>${project.build.directoryEntity}/conf</targetPath>
+        <directoryEntity>src/main/resources</directoryEntity>
       </resource>
     </resources>
     <finalName>${project.artifactId}</finalName>

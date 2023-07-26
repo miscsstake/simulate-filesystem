@@ -4,11 +4,11 @@ import com.eaglesoup.util.LockUtil;
 
 import java.io.*;
 
-public class FAT16XDisk implements IDisk {
+public class FAT16XDisk2 implements IDisk2 {
     private final RandomAccessFile disk;
-    private static final FAT16XDisk instance = new FAT16XDisk("/tmp/a.txt");
+    private static final FAT16XDisk2 instance = new FAT16XDisk2("/tmp/a.txt");
 
-    public FAT16XDisk(String path) {
+    public FAT16XDisk2(String path) {
         try {
             disk = new RandomAccessFile(path, "rw");
         } catch (FileNotFoundException e) {
@@ -16,7 +16,7 @@ public class FAT16XDisk implements IDisk {
         }
     }
 
-    public static FAT16XDisk getInstance() {
+    public static FAT16XDisk2 getInstance() {
         return instance;
     }
 

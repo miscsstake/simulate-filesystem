@@ -1,6 +1,6 @@
 package com.eaglesoup.ssh;
 
-import com.eaglesoup.command.ShellCommand;
+import com.eaglesoup.command.ShellCommand2;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
 import org.apache.sshd.server.channel.ChannelSession;
@@ -71,7 +71,7 @@ public class MyShellFactory implements ShellFactory {
         }
 
         public void run(ChannelSession session, Environment env) throws IOException {
-            new ShellCommand(in, out).start(session.getSession().getUsername(), () -> destroy(session));
+            new ShellCommand2(in, out).start(session.getSession().getUsername(), () -> destroy(session));
         }
     }
 

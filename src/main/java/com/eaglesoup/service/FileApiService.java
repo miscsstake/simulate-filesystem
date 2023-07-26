@@ -2,6 +2,7 @@ package com.eaglesoup.service;
 
 import com.eaglesoup.core.model.DirectoryEntityStruct;
 import com.eaglesoup.enums.FileModeEnum;
+import com.eaglesoup.fs.IFileSystem2;
 
 import java.util.List;
 
@@ -12,7 +13,7 @@ public class FileApiService {
     /**
      * 抽象文件系统层
      */
-    private static final IFileSystem fileSystem = new FAT16FileSystem();
+    private static final IFileSystem2 fileSystem = new FAT16FileSystem();
 
     public FileApiService(String filename) {
         fileSystem.open(filename, null);

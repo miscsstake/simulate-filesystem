@@ -2,7 +2,7 @@ package com.eaglesoup.core;
 
 import java.io.IOException;
 
-public interface IDisk {
+public interface IDisk2 {
     /**
      * 读取一个指定扇区的数据。
      *

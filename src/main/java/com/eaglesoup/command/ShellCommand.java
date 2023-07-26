@@ -1,156 +1,184 @@
 package com.eaglesoup.command;
 
-import com.eaglesoup.exception.BusinessException;
-import com.eaglesoup.service.FileApiService;
-import com.eaglesoup.util.FileUtil;
-import lombok.SneakyThrows;
-import org.apache.commons.lang3.StringUtils;
-import org.jline.reader.EndOfFileException;
-import org.jline.reader.LineReaderBuilder;
-import org.jline.reader.UserInterruptException;
-import org.jline.reader.impl.DefaultParser;
-import org.jline.reader.impl.LineReaderImpl;
-import org.jline.terminal.Attributes;
-import org.jline.terminal.Terminal;
-import org.jline.terminal.TerminalBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.eaglesoup.command.subcommand.*;
+import com.eaglesoup.fs.UnixFile;
+import com.eaglesoup.util.ParseUtils;
+import org.apache.sshd.server.ExitCallback;
 import picocli.CommandLine;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
+import java.util.concurrent.*;
 
-@CommandLine.Command(name = "shell")
-public class ShellCommand {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ShellCommand.class);
-    private String path = "/";
-    private final InputStream in;
-    private final OutputStream out;
+@CommandLine.Command(name = "", subcommands = {
+        FormatCommand.class,
+        EchoCommand.class,
+        LsCommand.class,
+        MkdirCommand.class,
+        TouchCommand.class,
+        PwdCommand.class,
+        RmCommand.class,
+        CdCommand.class,
+        CatCommand.class
+})
+public class ShellCommand implements Runnable {
+    protected UnixFile curr;
+    protected InputStream in = null;
+    protected OutputStream out = null;
+    protected OutputStream err = null;
+    protected ExitCallback callback = null;
 
-    public ShellCommand(InputStream in, OutputStream out) {
+    public ShellCommand(String path) {
+        this(path, System.in, System.out, System.err);
+    }
+
+    public ShellCommand(String path, InputStream in, OutputStream out, OutputStream err) {
+        this.curr = new UnixFile(path);
         this.in = in;
         this.out = out;
+        this.err = err;
     }
 
-    public void start(String userName, Runnable exitRunnable) throws IOException {
-        TerminalBuilder builder = TerminalBuilder.builder().name("JLine SSH");
-        if (out instanceof PrintStream) {
-            builder.system(true);
-        } else {
-            builder.system(false).streams(in, out);
+    public void setCurr(UnixFile curr) {
+        this.curr = curr;
+    }
+
+    public UnixFile getCurr() {
+        return this.curr;
+    }
+
+    protected void print(String msg) {
+        try {
+            out.write(msg.getBytes());
+            out.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        Terminal terminal = builder.build();
-
-        Attributes attr = terminal.getAttributes();
-        terminal.setAttributes(attr);
-
-        DefaultParser parser = new DefaultParser();
-        parser.setEscapeChars(null);
-        LineReaderImpl lineReader = (LineReaderImpl) LineReaderBuilder.builder()
-                .terminal(terminal)
-                .parser(parser)
-                .build();
-        handleInputLine(userName, lineReader, exitRunnable);
     }
 
-    @SneakyThrows
-    private void handleInputLine(String userName, LineReaderImpl lineReader, Runnable exitRunnable) {
-        String prompt = userName + "> ";
+    protected void println(String msg) {
+        print(msg + "\n");
+    }
+
+    @Override
+    public void run() {
+        Scanner scanner = new Scanner(in);
         while (true) {
-            String line;
+            print(String.format("root@mos-css:%s$ ", curr.getAbstractPath().equals("/") ? "/" : curr.getName()));
+            String command = scanner.nextLine();
+            if (command.length() == 0) {
+                continue;
+            }
+            if ("exit".equals(command) || "bye".equals(command)) {
+                println("good bye~");
+                break;
+            }
             try {
-                line = lineReader.readLine(prompt);
-                if ("clear".equals(line)) {
-                    lineReader.clearScreen();
-                } else if ("exit".equals(line)) {
-                    exitRunnable.run();
-                    return;
+                /*
+                 * 1. 通过管道符分割的命令
+                 * 2. 通过多线程创建管道
+                 * 3. 子命令之间使用pipedInputStream和pipedOutputStream进行连接起来
+                 * 4. 通过多线程执行命令
+                 */
+                List<String[]> args = ParseUtils.pipeCommand(ParseUtils.parseCommand(command));
+                if (args.size() > 1) {
+                    PipeCommand pipeCommand = new PipeCommand(args);
+                    pipeCommand.call(this);
                 } else {
-                    runCommand(line);
+                    SimpleCommand simpleCommand = new SimpleCommand(args.get(0));
+                    simpleCommand.call(this);
                 }
-            } catch (UserInterruptException e) {
-                // Do nothing
-            } catch (EndOfFileException e) {
-                LOGGER.info("\n byte");
-                return;
-            } catch (Throwable e) {
-                print(out, e.getMessage());
+            } catch (Exception e) {
+                println(e.getMessage());
             }
         }
+        scanner.close();
     }
 
-    private void print(OutputStream out, String result) throws IOException {
-        StringBuilder output = new StringBuilder();
-        String[] arr = result.split("\\\\n");
-        for (String str : arr) {
-            output.append(str).append("\r\n");
-        }
-        if (result.endsWith("\\n")) {
-            output.append("\r\n");
-        }
-        out.write(output.toString().getBytes());
-        out.flush();
-    }
+    protected static class PipeCommand {
+        private final List<String[]> pipeArgs;
 
-    @SneakyThrows
-    private void runCommand(String commandString) {
-        if (commandString.isEmpty()) {
-            return;
-        }
-        MyExceptionHandle myExceptionHandle = new MyExceptionHandle();
-        CommandLine commandLine = new CommandLine(new ShellCommand(in, out))
-                .setExecutionExceptionHandler(myExceptionHandle)
-                .addSubcommand("ll", new LsCommand(path))
-                .addSubcommand("ls", new LsCommand(path))
-                .addSubcommand(new FormatCommand(path))
-                .addSubcommand(new MkdirCommand(path))
-                .addSubcommand(new TouchCommand(path))
-                .addSubcommand(new CdCommand(path))
-                .addSubcommand(new PwdCommand(path))
-                .addSubcommand(new CatCommand(path))
-                .addSubcommand(new EchoCommand(path))
-                .addSubcommand(new RmCommand(path))
-                .addSubcommand(new HelpCommand());
-        String[] commandArr = commandString.split("\\s+(?=([^\"]*\"[^\"]*\")*[^\"]*$)"); // 将输入的字符串按照空格分割成命令数组
-        if (!commandLine.getSubcommands().containsKey(commandArr[0])) {
-            throw new BusinessException("不支持的命令");
-        }
-        commandLine.execute(commandArr);
-        List<CommandLine> commandLineList = commandLine.getParseResult().asCommandLineList();
-        commandLine = commandLineList.get(commandLineList.size() - 1);
-        boolean isAppend = commandString.contains(">>");
-        afterCommand(commandLine, myExceptionHandle, isAppend);
-    }
-
-    @SneakyThrows
-    private void afterCommand(CommandLine commandLine, MyExceptionHandle myExceptionHandle, boolean isAppend) {
-        String result = commandLine.getExecutionResult();
-        result = StringUtils.removeStart(result, "\"");
-        result = StringUtils.removeEnd(result, "\"");
-        if (myExceptionHandle.exception != null) {
-            //执行过程报错
-            print(out, myExceptionHandle.exception.getMessage());
-            return;
-        } else if (commandLine.getCommand() instanceof CdCommand) {
-            //cd操作
-            path = result;
-            return;
+        public PipeCommand(List<String[]> pipeArgs) {
+            this.pipeArgs = pipeArgs;
         }
 
-        //输出 or 重定向
-        String outputFile = "";
-        if (commandLine.getCommand() instanceof AbsCommand) {
-            outputFile = ((AbsCommand) commandLine.getCommand()).getOutputFile();
-        }
-        if (outputFile.isEmpty()) {
-            print(out, result);
-        } else {
-            String fullFilename = FileUtil.fullFilename(this.path, outputFile);
-            if (isAppend) {
-                (new FileApiService(fullFilename)).writeAppend(result.getBytes());
-            } else {
-                (new FileApiService(fullFilename)).write(result.getBytes());
+        public void call(ShellCommand parent) throws IOException {
+            /*
+             * 创建多个ShellCommand,并通过PipedInputStream和PipedOutputStream进行连接,
+             * 其中第一个ShellCommand的输入流是标准输入流,最后一个ShellCommand的输出流是标准输出流
+             * 中间的ShellCommand的输入流和输出流都是通过PipedInputStream和PipedOutputStream进行连接
+             */
+            ExecutorService executorService = Executors.newFixedThreadPool(pipeArgs.size());
+            PipedInputStream in = null;
+            PipedOutputStream out = null;
+            PrintStream err = new PrintStream(parent.err);
+            ShellCommand shellCommand = null;
+            List<ShellCommand> commands = new ArrayList<>();
+            List<Future<Integer>> futures = new ArrayList<>();
+            for (int i = 0; i < pipeArgs.size(); i++) {
+                if (i == 0) {
+                    out = new PipedOutputStream();
+                    shellCommand = new ShellCommand(parent.curr.getAbstractPath(), parent.in, new PrintStream(out), parent.err);
+                } else if (i == pipeArgs.size() - 1) {
+                    in = new PipedInputStream(out);
+                    shellCommand = new ShellCommand(parent.curr.getAbstractPath(), in, parent.out, parent.err);
+                } else {
+                    in = new PipedInputStream();
+                    out = new PipedOutputStream();
+                    shellCommand = new ShellCommand(parent.curr.getAbstractPath(), in, new PrintStream(out), parent.err);
+                }
+                commands.add(shellCommand);
             }
+            /*
+             * 通过多线程执行命令
+             */
+            for (int i = 0; i < pipeArgs.size(); i++) {
+                ShellCommand command = commands.get(i);
+                String[] args = pipeArgs.get(i);
+                CommandLine commandLine = new CommandLine(command);
+                commandLine.setOut(new PrintWriter(command.out));
+                commandLine.setErr(new PrintWriter(command.err));
+                commandLine.setExecutionExceptionHandler((e, commandLine1, parseResult) -> {
+                    command.print(e.getMessage());
+                    return 0;
+                });
+                Future<Integer> future = executorService.submit(() -> commandLine.execute(args));
+                futures.add(future);
+            }
+            /*
+             * 等待所有命令执行完毕
+             */
+            for (Future<Integer> future : futures) {
+                try {
+                    future.get();
+                } catch (InterruptedException | ExecutionException e) {
+                    err.println(e.getMessage());
+                }
+            }
+            executorService.shutdown();
         }
     }
+
+    protected static class SimpleCommand {
+        private String[] args;
+
+        public SimpleCommand(String[] args) {
+            this.args = args;
+        }
+
+        public void call(ShellCommand parent) {
+            CommandLine commandLine = new CommandLine(parent);
+            commandLine.setOut(new PrintWriter(parent.out));
+            commandLine.setErr(new PrintWriter(parent.out));
+            commandLine.setExecutionExceptionHandler((e, commandLine1, parseResult) -> {
+                parent.println(e.getMessage());
+                return 0;
+            });
+            commandLine.execute(args);
+        }
+    }
+
+
 }

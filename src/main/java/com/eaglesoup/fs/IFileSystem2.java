@@ -1,4 +1,4 @@
-package com.eaglesoup.service;
+package com.eaglesoup.fs;
 
 import com.eaglesoup.core.model.DirectoryEntityStruct;
 import com.eaglesoup.dto.FileModeDTO;
@@ -9,7 +9,11 @@ import java.util.List;
 /**
  * 抽象文件系统层
  */
-public interface IFileSystem {
+public interface IFileSystem2 {
+    int WRITE = 1;
+    int APPEND = 2;
+    int READ = 0;
+
     /*** 文件操作 ****/
     FileModeDTO open(String fileName, FileModeEnum fileModeEnum);
 

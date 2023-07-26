@@ -1,7 +1,7 @@
 package com.eaglesoup.service;
 
-import com.eaglesoup.core.FAT16XDisk;
-import com.eaglesoup.core.IDisk;
+import com.eaglesoup.core.FAT16XDisk2;
+import com.eaglesoup.core.IDisk2;
 import com.eaglesoup.core.model.BootSectorStruct;
 import com.eaglesoup.core.model.DirectoryEntityStruct;
 import com.eaglesoup.core.model.FAT16XStruct;
@@ -9,6 +9,7 @@ import com.eaglesoup.dto.DirectoryEntityDto;
 import com.eaglesoup.dto.FileModeDTO;
 import com.eaglesoup.enums.FileModeEnum;
 import com.eaglesoup.exception.BusinessException;
+import com.eaglesoup.fs.IFileSystem2;
 import com.eaglesoup.util.FATUtil;
 import com.eaglesoup.util.SizeUtil;
 import lombok.SneakyThrows;
@@ -18,8 +19,8 @@ import java.util.*;
 /**
  * 具体的fat16文件系统层
  */
-public class FAT16FileSystem implements IFileSystem {
-    private static final IDisk idisk = FAT16XDisk.getInstance();
+public class FAT16FileSystem implements IFileSystem2 {
+    private static final IDisk2 IDISK = FAT16XDisk2.getInstance();
     private static final BootSectorStruct bootSectorStruct = BootSectorStruct.getInstance();
     private FileModeDTO fileModeDTO;
 
@@ -133,7 +134,7 @@ public class FAT16FileSystem implements IFileSystem {
             startSectorIndex = (int) SizeUtil.byteArrayToLong(clusterBytes, Short.BYTES) * sectorCount;
         }
         for (int i = 0; i < sectorCount; i++) {
-            byte[] buffer = idisk.readSector(startSectorIndex + i);
+            byte[] buffer = IDISK.readSector(startSectorIndex + i);
             for (int j = 0; j < buffer.length; j += DirectoryEntityStruct.ENTITY_SIZE) {
                 if (buffer[j] != 0) {
                     DirectoryEntityStruct entityStruct = DirectoryEntityStruct.byteToObj(Arrays.copyOfRange(buffer, j, j + DirectoryEntityStruct.ENTITY_SIZE));
@@ -191,7 +192,7 @@ public class FAT16FileSystem implements IFileSystem {
         byte[] directory = DirectoryEntityStruct.format();
 
         //创建2g大小的文件
-        writeBigSize(idisk.diskSize(), 0, null);
+        writeBigSize(IDISK.diskSize(), 0, null);
         writeBigSize(0, 0, boot);
         writeBigSize(0, FATUtil.fatSectorIndex(), fat);
         writeBigSize(0, FATUtil.rootDirSectorIndex(), directory);
@@ -228,7 +229,7 @@ public class FAT16FileSystem implements IFileSystem {
     private DirectoryEntityDto fileLocationInfo(int startSectorIndex, int sectorCount, String fileName) {
         DirectoryEntityDto directoryEntityDto = DirectoryEntityDto.builder().build();
         for (int i = 0; i < sectorCount; i++) {
-            byte[] buffer = idisk.readSector(startSectorIndex + i);
+            byte[] buffer = IDISK.readSector(startSectorIndex + i);
             for (int j = 0; j < buffer.length; j += DirectoryEntityStruct.ENTITY_SIZE) {
                 if (buffer[j] == 0) {
                     if (directoryEntityDto.getAvailableSectorIndex() == 0) {
@@ -275,7 +276,7 @@ public class FAT16FileSystem implements IFileSystem {
         int fatSectorCount = FATUtil.fatSize() / bootSectorStruct.getPerSectorBytes();
         int clusterIndex = 0;
         for (int i = 0; i < fatSectorCount; i++) {
-            byte[] buffer = idisk.readSector(fatSectorIndex + i);
+            byte[] buffer = IDISK.readSector(fatSectorIndex + i);
             for (int j = 0; j < buffer.length; j += FAT16XStruct.PER_FAT_SIZE) {
                 if (buffer[j] == 0) {
                     return clusterIndex;
@@ -290,7 +291,7 @@ public class FAT16FileSystem implements IFileSystem {
     @SneakyThrows
     private void writeFat(int clusterIndex, byte[] clusterStatusBytes) {
         int fatSectorIndex = FATUtil.fatSectorIndex() + (clusterIndex * 2) / bootSectorStruct.getPerSectorBytes();
-        byte[] buffer = idisk.readSector(fatSectorIndex);
+        byte[] buffer = IDISK.readSector(fatSectorIndex);
         System.arraycopy(clusterStatusBytes, 0, buffer, clusterIndex * 2, clusterStatusBytes.length);
         writeBigSize(0, fatSectorIndex, buffer);
     }
@@ -298,7 +299,7 @@ public class FAT16FileSystem implements IFileSystem {
     @SneakyThrows
     private short readFat(int clusterIndex) {
         int fatSectorIndex = FATUtil.fatSectorIndex() + (clusterIndex * 2) / bootSectorStruct.getPerSectorBytes();
-        byte[] buffer = idisk.readSector(fatSectorIndex);
+        byte[] buffer = IDISK.readSector(fatSectorIndex);
         byte[] cluster = Arrays.copyOfRange(buffer, clusterIndex * 2, (clusterIndex + 1) * 2);
         return (short) SizeUtil.byteArrayToLong(cluster, Short.BYTES);
     }
@@ -306,14 +307,14 @@ public class FAT16FileSystem implements IFileSystem {
     @SneakyThrows
     private void writeBigSize(long size, int sectorIndex, byte[] buffer) {
         if (buffer != null) {
-            idisk.writeSector(sectorIndex, buffer);
+            IDISK.writeSector(sectorIndex, buffer);
             return;
         }
         int clusterBytesSize = bootSectorStruct.getPerClusterSectors() * bootSectorStruct.getPerSectorBytes();
         while (size > 0) {
             //每次写入一个cluster
             long writeSize = size < clusterBytesSize ? size : clusterBytesSize;
-            idisk.writeSector(sectorIndex, new byte[(int) writeSize]);
+            IDISK.writeSector(sectorIndex, new byte[(int) writeSize]);
 
             size -= clusterBytesSize;
             sectorIndex += bootSectorStruct.getPerClusterSectors();
@@ -348,7 +349,7 @@ public class FAT16FileSystem implements IFileSystem {
             int copyLength = Math.min(bytes.length, usableSpace);
 
             byte[] content = Arrays.copyOfRange(bytes, 0, copyLength);
-            byte[] buffer = idisk.readSector(sectorIndex);
+            byte[] buffer = IDISK.readSector(sectorIndex);
             System.arraycopy(content, 0, buffer, oldFileSize, copyLength);
             writeBigSize(0, sectorIndex, buffer);
 
@@ -409,7 +410,7 @@ public class FAT16FileSystem implements IFileSystem {
         for (int i = 0; i < sectorCount; i++) {
             if (end <= 0) return;
             int sectorIndex = clusterIndex * sectorCount;
-            byte[] buffer = idisk.readSector(sectorIndex + i);
+            byte[] buffer = IDISK.readSector(sectorIndex + i);
             int len = Math.min(buffer.length, end);
             byte[] copyContent = Arrays.copyOfRange(buffer, 0, len);
             System.arraycopy(copyContent, 0, result, start, len);
