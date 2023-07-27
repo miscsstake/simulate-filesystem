@@ -12,12 +12,7 @@ public enum DirectoryEntityAttrTypeEnum {
     /**
      * 目录
      */
-    DIR((byte) 0x10),
-
-    /**
-     * 长文件
-     */
-    LFN((byte) 0xF);
+    DIR((byte) 0x10);
 
     private final byte code;
 

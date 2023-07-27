@@ -57,13 +57,6 @@ public class UnixDirectory {
         return DirectoryEntityAttrTypeEnum.FILE == DirectoryEntityAttrTypeEnum.valueOf(getAttributeByte());
     }
 
-    /**
-     * 是否是长文件(long file name)
-     */
-    public boolean isFLN() {
-        return DirectoryEntityAttrTypeEnum.LFN == DirectoryEntityAttrTypeEnum.valueOf(getAttributeByte());
-    }
-
     public String getAbstractPath() {
         if (parent == null) {
             return "/";

@@ -9,7 +9,6 @@ import lombok.SneakyThrows;
 import java.nio.ByteBuffer;
 import java.nio.ShortBuffer;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class Fat16 {
     private final IDisk disk;
@@ -70,9 +69,12 @@ public class Fat16 {
     private void resetDataFat() {
         byte[] clear = new byte[Layout.SECTOR_SIZE];
         for (int i = Layout.NUMBER_OF_LIST_CLUSTER_SIZE; i < Layout.FAT_ENTRIES_COUNT; i++) {
-            for (int j = 0; j < Layout.SECTORS_PER_CLUSTER; j++) {
-                int sectorIndex = i * Layout.SECTORS_PER_CLUSTER + j;
-                disk.writeSector(sectorIndex, clear);
+            Integer[] clusters = listCluster(i);
+            for (Integer clusterIdx : clusters) {
+                int sectorIdx = clusterIdx * Layout.SECTORS_PER_CLUSTER;
+                for (int j = 0; j < Layout.SECTORS_PER_CLUSTER; j++) {
+                    this.disk.writeSector(sectorIdx + j, clear);
+                }
             }
         }
     }
@@ -98,29 +100,6 @@ public class Fat16 {
     /**
      * =======文件条目相关操作=======
      */
-//    public List<UnixDirectory> listDirectoryEntry(UnixDirectory parent) {
-//        if (parent == rootDirectory) {
-//            return listDirectoryEntry(parent, Layout.ROOT_DIRECTORY_REGION_START, Layout.NUMBER_OF_POSSIBLE_ROOT_ENTRIES);
-//        } else {
-//            int clusterIndex = parent.getOriginal().getStartingCluster() * Layout.SECTORS_PER_CLUSTER;
-//            return listDirectoryEntry(parent, clusterIndex, Layout.SECTORS_PER_CLUSTER);
-//        }
-//    }
-    public List<UnixDirectory> listEntityExcludeFln(UnixDirectory parent) {
-        List<UnixDirectory> directories = listDirectoryEntry(parent);
-        for (int i = 0; i < directories.size(); ) {
-            DirectoryEntity directoryEntity = directories.get(i).getOriginal();
-            LfnEntity lfnEntity = new LfnEntity();
-            lfnEntity.from(directoryEntity.getBytes());
-            if (lfnEntity.isLastLfnEntity()) {
-
-            } else {
-                i++;
-            }
-        }
-        return directories;
-    }
-
     /**
      * 查询所有的entity(32个字节): 包括LFN类型的entity
      */
@@ -167,15 +146,6 @@ public class Fat16 {
             prefixLfnIndex--;
         }
         return longFileName.toString();
-    }
-
-    private Integer[] listSector(int clusterIdx) {
-        List<Integer> sectors = new ArrayList<>();
-        Integer[] clusters = listCluster(clusterIdx);
-        for (Integer cluster : clusters) {
-            sectors.add(cluster * Layout.SECTORS_PER_CLUSTER);
-        }
-        return sectors.toArray(new Integer[0]);
     }
 
     public Integer[] listCluster(int clusterIdx) {
@@ -238,13 +208,29 @@ public class Fat16 {
      * 创建目录或者文件
      */
     public UnixDirectory createDirectory(UnixDirectory parent, String pathName, boolean isDir) {
-        UnixDirectory directory = findFreeDirectory(parent, pathName);
-        if (directory == null) {
+        List<UnixDirectory> unixDirectoryList = findFreeDirectory(parent, pathName);
+        if (unixDirectoryList.isEmpty()) {
             throw new IllegalStateException("directory max size " + Layout.NUMBER_OF_ROOT_ENTRIES_COUNT);
         }
-        directory.setOriginal(buildDirectory(pathName, isDir));
-        writeEntry(directory.getOriginal(), directory.getSectorIdx(), directory.getOffset());
-        return directory;
+        int unixDirectoryCount = unixDirectoryList.size();
+        UnixDirectory dirEntityUnixDirectory = unixDirectoryList.get(unixDirectoryCount - 1);
+        //倒序存放信息
+        for (int i = 0; i < unixDirectoryCount; i++) {
+            int pos = unixDirectoryCount - i - 1;
+            if (i == 0) {
+                //存放directoryEntity
+                dirEntityUnixDirectory.setPathName(pathName);
+                dirEntityUnixDirectory.setOriginal(buildDirectory(pathName, isDir));
+                writeEntry(dirEntityUnixDirectory.getOriginal().getBytes(), dirEntityUnixDirectory.getSectorIdx(), dirEntityUnixDirectory.getOffset());
+            } else {
+                String lfnParts = pathName.substring((i - 1) * Layout.LFN_FILE_LENGTH, Math.min(i * Layout.LFN_FILE_LENGTH, pathName.length()));
+                boolean isLastLfnNumber = i == unixDirectoryCount - 1;
+                LfnEntity lfnEntity = buildLfnEntity(lfnParts, (byte) i, isLastLfnNumber);
+                UnixDirectory lfnEntityUnixDirectory = unixDirectoryList.get(pos);
+                writeEntry(lfnEntity.getBytes(), lfnEntityUnixDirectory.getSectorIdx(), lfnEntityUnixDirectory.getOffset());
+            }
+        }
+        return dirEntityUnixDirectory;
     }
 
     /**
@@ -253,10 +239,10 @@ public class Fat16 {
     private DirectoryEntity buildDirectory(String pathName, boolean isDir) {
         DirectoryEntity entry = new DirectoryEntity();
         byte[] fileName = new byte[8];
-        System.arraycopy(pathName.getBytes(), 0, fileName, 0, Math.min(pathName.length(), 8));
+        if (pathName.length() <= Layout.LONG_FILE_NAME_LENGTH) {
+            System.arraycopy(pathName.getBytes(), 0, fileName, 0, pathName.length());
+        }
         entry.setFileName(fileName);
-        //todo 设置文件后缀
-//        entry.setFilenameExtension();
         entry.setCreationTimeStamp((int) (System.currentTimeMillis() / 1000));
         entry.setLastWriteTimeStamp((int) (System.currentTimeMillis() / 1000));
         entry.setStartingCluster((short) (findNextFreeCluster(Integer.MIN_VALUE) & 0XFFFF));
@@ -264,52 +250,99 @@ public class Fat16 {
         return entry;
     }
 
-    private UnixDirectory findFreeDirectory(UnixDirectory parent, String pathName) {
+    /**
+     * 创建长文件
+     */
+    private LfnEntity buildLfnEntity(String pathName, byte lfnNumber, boolean isLastLfn) {
+        byte[] pathNameBytes = pathName.getBytes();
+        LfnEntity lfnEntity = new LfnEntity();
+        lfnEntity.setOriginField((byte) ((isLastLfn ? Layout.LFN_LAST_NUMBER : 0) + lfnNumber));
+        lfnEntity.setPart1(Arrays.copyOfRange(pathNameBytes, 0, lfnEntity.getPart1().length));
+        lfnEntity.setAttributeByte(Layout.LFN_MARK);
+        lfnEntity.setPart2(Arrays.copyOfRange(pathNameBytes, lfnEntity.getPart1().length, lfnEntity.getPart2().length));
+        return lfnEntity;
+    }
+
+    /**
+     * 查找可用来创建新文件的索引位置：如果是长文件支持跨sector
+     */
+    private List<UnixDirectory> findFreeDirectory(UnixDirectory parent, String pathName) {
         List<UnixDirectory> subDirectors = listDirectoryEntry(parent);
+        //n个LfnEntity + 1个directoryEntity
+        int needEntityCount;
+        if (pathName.length() > Layout.LONG_FILE_NAME_LENGTH) {
+            needEntityCount = (int) Math.ceil((double) pathName.length() / Layout.LFN_FILE_LENGTH) + 1;
+        } else {
+            needEntityCount = 1;
+        }
         for (int i = 0; i < subDirectors.size(); i++) {
-            //n个LfnEntity + 1个directoryEntity
-            int needEntityCount = 1;
-            if (pathName.length() > Layout.LONG_FILE_NAME_LENGTH) {
-                needEntityCount = (int) Math.ceil((double) pathName.length() / Layout.LFN_FILE_LENGTH) + 1;
-            }
-            int hitCount = 0;
+            List<UnixDirectory> freeDirectoryList = new ArrayList<>();
             for (int j = 0; j < needEntityCount; j++) {
                 int pos = i + j;
                 if (subDirectors.size() == pos) {
-                    return null;
+                    return new ArrayList<>();
                 }
                 DirectoryEntity dirEntity = subDirectors.get(pos).getOriginal();
                 if (dirEntity.isDirEntity(dirEntity.getAttributeByte()) && dirEntity.isEmptyDirEntity()) {
-                    hitCount++;
+                    freeDirectoryList.add(subDirectors.get(pos));
                 } else {
                     break;
                 }
             }
-            if (hitCount == needEntityCount) {
-                return subDirectors.get(i);
+            if (freeDirectoryList.size() == needEntityCount) {
+                return freeDirectoryList;
             }
         }
-        return null;
+        return new ArrayList<>();
     }
 
     public void removeDirectory(UnixDirectory directory) {
         if (directory == rootDirectory) {
             throw new IllegalStateException("root directory not delete");
         }
-        this.writeEntry(new DirectoryEntity(), directory.getSectorIdx(), directory.getOffset());
+        int sectorIdx = directory.getSectorIdx();
+        int offset = directory.getOffset();
+        if (directory.getOriginal().isLongFileName()) {
+            this.writeDirEntry(new DirectoryEntity(), sectorIdx, offset);
+            byte[] bytes = disk.readSector(sectorIdx);
+            while (true) {
+                offset -= Layout.DIRECTORY_ENTRY_SIZE;
+                if (offset <= 0) {
+                    offset = Layout.SECTOR_SIZE / Layout.DIRECTORY_ENTRY_SIZE;
+                    sectorIdx--;
+                    bytes = disk.readSector(sectorIdx);
+                }
+                LfnEntity lfnEntity = new LfnEntity();
+                lfnEntity.from(Arrays.copyOfRange(bytes, offset, offset + Layout.DIRECTORY_ENTRY_SIZE));
+                this.writeDirEntry(new DirectoryEntity(), sectorIdx, offset);
+                if (!lfnEntity.isLFN(lfnEntity.getAttributeByte())) {
+                    throw new IllegalStateException("filesystem data is exception");
+                }
+                if (lfnEntity.isLastLfnEntity()) {
+                    break;
+                }
+            }
+        } else {
+            this.writeDirEntry(new DirectoryEntity(), sectorIdx, offset);
+        }
     }
 
 
     public void updateDirectory(UnixDirectory path) {
-        this.writeEntry(path.getOriginal(), path.getSectorIdx(), path.getOffset());
+        this.writeDirEntry(path.getOriginal(), path.getSectorIdx(), path.getOffset());
     }
 
-    private void writeEntry(DirectoryEntity directoryEntity, int sectorIdx, int offset) {
+    private void writeDirEntry(DirectoryEntity directoryEntity, int sectorIdx, int offset) {
+        writeEntry(directoryEntity.getBytes(), sectorIdx, offset);
+    }
+
+    private void writeEntry(byte[] bytes, int sectorIdx, int offset) {
         ByteBuffer buffer = ByteBuffer.wrap(this.disk.readSector(sectorIdx));
         buffer.position(offset);
-        buffer.put(directoryEntity.getBytes(), 0, Layout.DIRECTORY_ENTRY_SIZE);
+        buffer.put(bytes, 0, Layout.DIRECTORY_ENTRY_SIZE);
         this.disk.writeSector(sectorIdx, buffer.array());
     }
+
 
     public void freeCluster(int clusterIdx) {
         int pos = clusterIdx;

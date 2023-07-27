@@ -46,8 +46,4 @@ public class LfnEntity implements IEntity {
     public boolean isLastLfnEntity() {
         return (Layout.LFN_LAST_NUMBER & this.originField) != 0;
     }
-
-    public int lfnNumber() {
-        return this.originField & 0x3F;
-    }
 }

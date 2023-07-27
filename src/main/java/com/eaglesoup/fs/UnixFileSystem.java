@@ -105,8 +105,7 @@ public class UnixFileSystem implements IFileSystem {
         List<UnixDirectory> directories = fat16.listDirectoryEntry(path);
         List<UnixFile> unixPaths = new ArrayList<>();
         for (UnixDirectory directory : directories) {
-            DirectoryEntity directoryEntity = directory.getOriginal();
-            if (directory.getOriginal().getCreationTimeStamp() != 0) {
+            if (!directory.getPathName().isEmpty()) {
                 unixPaths.add(new UnixFile(directory.getAbstractPath()));
             }
         }
