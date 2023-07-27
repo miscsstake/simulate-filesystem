@@ -35,7 +35,6 @@ public class UnixFat16FileOutputStream extends OutputStream {
 
     @Override
     public void write(int b) {
-
         if (pos >= buffer.length) {
             //数据写入
             flush();

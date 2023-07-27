@@ -6,9 +6,12 @@ import com.eaglesoup.fs.fat.Layout;
 import com.eaglesoup.util.ParseUtils;
 import lombok.SneakyThrows;
 
+import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.ShortBuffer;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Fat16 {
     private final IDisk disk;

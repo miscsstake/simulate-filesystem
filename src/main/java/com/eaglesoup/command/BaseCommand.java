@@ -67,6 +67,7 @@ public abstract class BaseCommand implements Callable<Integer> {
     @Override
     public Integer call() throws Exception {
         out = parent.out;
+        in = parent.in;
         Integer result = call0();
         out.flush();
         return result;
