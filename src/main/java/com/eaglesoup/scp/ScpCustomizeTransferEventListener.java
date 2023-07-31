@@ -10,7 +10,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
-import java.util.Objects;
 import java.util.Scanner;
 import java.util.Set;
 
@@ -24,15 +23,9 @@ public class ScpCustomizeTransferEventListener implements ScpTransferEventListen
         String tmpFilePath = path.toUri().getPath();
         String filePath = tmpFilePath.substring("/tmp".length());
         File file = new File(filePath);
-        if (!"/".equals(file.getParent())) {
-            UnixFile unixFile = new UnixFile(file.getParent());
-            if (!unixFile.exist()) {
-                unixFile.mkdir();
-            }
-        }
+        mkdir(file.getParentFile());
         UnixFileOutputStream out = new UnixFileOutputStream(MosOs.fileSystem().open(file.getAbsolutePath()));
-        try {
-            Scanner scanner = new Scanner(path);
+        try (Scanner scanner = new Scanner(path)) {
             while (scanner.hasNextLine()) {
                 String line = scanner.nextLine();
                 out.write(line.getBytes());
@@ -41,5 +34,16 @@ public class ScpCustomizeTransferEventListener implements ScpTransferEventListen
             throw new RuntimeException(e);
         }
         out.close();
+    }
+
+    private void mkdir(File file) {
+        if ("/".equals(file.getPath())) {
+            return;
+        }
+        mkdir(file.getParentFile());
+        UnixFile unixFile = new UnixFile(file.getPath());
+        if (!unixFile.exist()) {
+            unixFile.mkdir();
+        }
     }
 }

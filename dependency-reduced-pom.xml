@@ -7,12 +7,6 @@
   <version>1.0-SNAPSHOT</version>
   <url>http://maven.apache.org</url>
   <build>
-    <resources>
-      <resource>
-        <targetPath>${project.build.directoryEntity}/conf</targetPath>
-        <directoryEntity>src/main/resources</directoryEntity>
-      </resource>
-    </resources>
     <finalName>${project.artifactId}</finalName>
     <plugins>
       <plugin>

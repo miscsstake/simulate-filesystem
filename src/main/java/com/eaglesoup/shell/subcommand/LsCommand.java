@@ -30,7 +30,7 @@ public class LsCommand extends BaseCommand {
     }
 
     private void printPath(UnixFile file) {
-        String format = "%11s %10s %-20s";
+        String format = "%11s %10s %s";
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
         if (file.exist()) {
             for (UnixFile p : file.listFiles()) {
