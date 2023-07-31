@@ -1,6 +1,6 @@
-package com.eaglesoup.command;
+package com.eaglesoup.shell;
 
-import com.eaglesoup.command.subcommand.*;
+import com.eaglesoup.shell.subcommand.*;
 import com.eaglesoup.fs.UnixFile;
 import com.eaglesoup.util.ParseUtils;
 import org.apache.sshd.server.ExitCallback;
@@ -21,6 +21,7 @@ import java.util.concurrent.*;
         PwdCommand.class,
         RmCommand.class,
         CdCommand.class,
+        ClearCommand.class,
         CatCommand.class,
         GrepCommand.class
 })
@@ -30,6 +31,7 @@ public class ShellCommand implements Runnable {
     protected OutputStream out = null;
     protected OutputStream err = null;
     protected ExitCallback callback = null;
+    protected ShellCommand parentCommand;
 
     public ShellCommand(String path) {
         this(path, System.in, System.out, System.err);
@@ -44,6 +46,10 @@ public class ShellCommand implements Runnable {
 
     public void setCurr(UnixFile curr) {
         this.curr = curr;
+    }
+
+    public void setParentCommand(ShellCommand command) {
+        this.parentCommand = command;
     }
 
     public UnixFile getCurr() {
@@ -84,13 +90,8 @@ public class ShellCommand implements Runnable {
                  * 4. 通过多线程执行命令
                  */
                 List<String[]> args = ParseUtils.pipeCommand(ParseUtils.parseCommand(command));
-                if (args.size() > 1) {
-                    PipeCommand pipeCommand = new PipeCommand(args);
-                    pipeCommand.call(this);
-                } else {
-                    SimpleCommand simpleCommand = new SimpleCommand(args.get(0));
-                    simpleCommand.call(this);
-                }
+                PipeCommand pipeCommand = new PipeCommand(args);
+                pipeCommand.call(this);
             } catch (Exception e) {
                 println(e.getMessage());
             }
@@ -112,32 +113,39 @@ public class ShellCommand implements Runnable {
              * 中间的ShellCommand的输入流和输出流都是通过PipedInputStream和PipedOutputStream进行连接
              */
             ExecutorService executorService = Executors.newFixedThreadPool(pipeArgs.size());
-            PipedInputStream in = new PipedInputStream();
-            PipedOutputStream out = new PipedOutputStream(in);
+//            PipedInputStream in = new PipedInputStream();
+//            PipedOutputStream out = new PipedOutputStream(in);
+            PipedInputStream in = null;
+            PipedOutputStream out = null;
+
             PrintStream err = new PrintStream(parent.err);
             ShellCommand shellCommand = null;
             List<ShellCommand> commands = new ArrayList<>();
             List<Future<Integer>> futures = new ArrayList<>();
+
             for (int i = 0; i < pipeArgs.size(); i++) {
-                if (i == 0) {
+                if (i != pipeArgs.size() - 1 && i == 0) {
                     shellCommand = new ShellCommand(parent.curr.getAbstractPath(), parent.in, out, parent.err);
                 } else {
                     shellCommand = new ShellCommand(parent.curr.getAbstractPath(), in, parent.out, parent.err);
                 }
 
-//                if (i == 0) {
-//                    out = new PipedOutputStream();
-//                    shellCommand = new ShellCommand(parent.curr.getAbstractPath(), parent.in, new PrintStream(out), parent.err);
-//                } else if (i == pipeArgs.size() - 1) {
+//                if (i == pipeArgs.size() - 1) {
 //                    in = new PipedInputStream(out);
 //                    shellCommand = new ShellCommand(parent.curr.getAbstractPath(), in, parent.out, parent.err);
+//                } else if (i == 0) {
+//                    out = new PipedOutputStream();
+//                    shellCommand = new ShellCommand(parent.curr.getAbstractPath(), parent.in, new PrintStream(out), parent.err);
 //                } else {
 //                    in = new PipedInputStream();
 //                    out = new PipedOutputStream();
 //                    shellCommand = new ShellCommand(parent.curr.getAbstractPath(), in, new PrintStream(out), parent.err);
 //                }
+                shellCommand.setParentCommand(parent);
                 commands.add(shellCommand);
             }
+
+
             /*
              * 通过多线程执行命令
              */
@@ -156,6 +164,7 @@ public class ShellCommand implements Runnable {
                     if (command.out instanceof PipedOutputStream) {
                         command.out.close();
                     }
+                    command.parentCommand.setCurr(command.getCurr());
                     return executeCode;
                 });
                 futures.add(future);
@@ -173,25 +182,4 @@ public class ShellCommand implements Runnable {
             executorService.shutdown();
         }
     }
-
-    protected static class SimpleCommand {
-        private String[] args;
-
-        public SimpleCommand(String[] args) {
-            this.args = args;
-        }
-
-        public void call(ShellCommand parent) {
-            CommandLine commandLine = new CommandLine(parent);
-            commandLine.setOut(new PrintWriter(parent.out));
-            commandLine.setErr(new PrintWriter(parent.out));
-            commandLine.setExecutionExceptionHandler((e, commandLine1, parseResult) -> {
-                parent.println(e.getMessage());
-                return 0;
-            });
-            commandLine.execute(args);
-        }
-    }
-
-
 }

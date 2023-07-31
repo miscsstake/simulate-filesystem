@@ -1,6 +1,6 @@
-package com.eaglesoup.command.subcommand;
+package com.eaglesoup.shell.subcommand;
 
-import com.eaglesoup.command.BaseCommand;
+import com.eaglesoup.shell.BaseCommand;
 import com.eaglesoup.fs.UnixFile;
 import com.eaglesoup.fs.UnixFileOutputStream;
 import picocli.CommandLine;

@@ -1,4 +1,4 @@
-package com.eaglesoup.command;
+package com.eaglesoup.shell;
 
 import com.eaglesoup.fs.IFileSystem;
 import com.eaglesoup.fs.UnixFile;

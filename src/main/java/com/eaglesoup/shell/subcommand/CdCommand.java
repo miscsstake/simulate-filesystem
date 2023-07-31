@@ -1,10 +1,8 @@
-package com.eaglesoup.command.subcommand;
+package com.eaglesoup.shell.subcommand;
 
-import com.eaglesoup.command.BaseCommand;
+import com.eaglesoup.shell.BaseCommand;
 import com.eaglesoup.fs.UnixFile;
 import picocli.CommandLine;
-
-import java.io.IOException;
 
 @CommandLine.Command(name = "cd", description = "切换目录")
 public class CdCommand extends BaseCommand {

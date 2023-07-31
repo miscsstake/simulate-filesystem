@@ -1,10 +1,9 @@
-package com.eaglesoup.command.subcommand;
+package com.eaglesoup.shell.subcommand;
 
-import com.eaglesoup.command.BaseCommand;
+import com.eaglesoup.shell.BaseCommand;
 import com.eaglesoup.fs.UnixFile;
 import picocli.CommandLine;
 
-import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -35,7 +34,8 @@ public class LsCommand extends BaseCommand {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
         if (file.exist()) {
             for (UnixFile p : file.listFiles()) {
-                println(String.format(format, p.length(), sdf.format(new Date(p.lastModified())), p.getName()));
+                String filename = p.isDir() ? p.getName() + "/" : p.getName();
+                println(String.format(format, p.length(), sdf.format(new Date(p.lastModified())), filename));
             }
         } else {
             println(file.getAbstractPath() + "文件不存在");

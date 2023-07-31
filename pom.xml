@@ -72,18 +72,19 @@
             <artifactId>commons-io</artifactId>
             <version>${commons-io.version}</version>
         </dependency>
+
+        <!--scp组件-->
+        <dependency>
+            <groupId>org.apache.sshd</groupId>
+            <artifactId>sshd-scp</artifactId>
+            <version>2.10.0</version>
+        </dependency>
+
+
     </dependencies>
 
     <build>
         <finalName>${project.artifactId}</finalName>
-        <resources>
-            <!-- 把src/main/resources目录下所有的文件拷贝到conf目录中 -->
-            <resource>
-                <directoryEntity>src/main/resources</directoryEntity>
-                <targetPath>${project.build.directoryEntity}/conf</targetPath>
-            </resource>
-        </resources>
-
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

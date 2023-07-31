@@ -1,6 +1,6 @@
-package com.eaglesoup.command.subcommand;
+package com.eaglesoup.shell.subcommand;
 
-import com.eaglesoup.command.BaseCommand;
+import com.eaglesoup.shell.BaseCommand;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "pwd", helpCommand = true, description = "显示当前目录路径")

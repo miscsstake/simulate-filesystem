@@ -262,7 +262,9 @@ public class Fat16 {
         lfnEntity.setOriginField((byte) ((isLastLfn ? Layout.LFN_LAST_NUMBER : 0) + lfnNumber));
         lfnEntity.setPart1(Arrays.copyOfRange(pathNameBytes, 0, lfnEntity.getPart1().length));
         lfnEntity.setAttributeByte(Layout.LFN_MARK);
-        lfnEntity.setPart2(Arrays.copyOfRange(pathNameBytes, lfnEntity.getPart1().length, lfnEntity.getPart2().length));
+
+        int part2Start = Math.min(pathNameBytes.length, lfnEntity.getPart1().length);
+        lfnEntity.setPart2(Arrays.copyOfRange(pathNameBytes, part2Start, lfnEntity.getPart2().length));
         return lfnEntity;
     }
 

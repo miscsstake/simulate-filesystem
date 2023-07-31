@@ -1,6 +1,6 @@
-package com.eaglesoup.command.subcommand;
+package com.eaglesoup.shell.subcommand;
 
-import com.eaglesoup.command.BaseCommand;
+import com.eaglesoup.shell.BaseCommand;
 import picocli.CommandLine;
 
 /**
