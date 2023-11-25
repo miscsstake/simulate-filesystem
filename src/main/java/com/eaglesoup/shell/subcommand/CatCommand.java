@@ -14,7 +14,7 @@ public class CatCommand extends BaseCommand {
     protected Integer call0() {
         UnixFile file = new UnixFile(parent.getCurr(), path);
         UnixFileInputStream input = new UnixFileInputStream(file);
-        int v = 0;
+        int v;
         int lastv = 0;
         while ((v = input.read()) != -1) {
             lastv = v;

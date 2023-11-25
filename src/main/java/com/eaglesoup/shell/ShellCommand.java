@@ -74,7 +74,7 @@ public class ShellCommand implements Runnable {
         Scanner scanner = new Scanner(in);
         while (true) {
             print(String.format("root@mos-css:%s$ ", curr.getAbstractPath().equals("/") ? "/" : curr.getName()));
-            String command = scanner.nextLine();
+            String command = new Scanner(in).nextLine();
             if (command.length() == 0) {
                 continue;
             }
@@ -96,7 +96,7 @@ public class ShellCommand implements Runnable {
                 println(e.getMessage());
             }
         }
-        scanner.close();
+//        scanner.close();
     }
 
     protected static class PipeCommand {

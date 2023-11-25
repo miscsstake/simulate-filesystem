@@ -1,9 +1,5 @@
 package com.eaglesoup.device;
 
-import com.eaglesoup.fs.fat.Layout;
-import lombok.SneakyThrows;
-
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 

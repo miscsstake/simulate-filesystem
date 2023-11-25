@@ -1,10 +1,5 @@
 package com.eaglesoup.scp;
 
-import com.eaglesoup.ssh.SshShellCommand;
-import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
-import org.apache.sshd.scp.ScpModuleProperties;
-import org.apache.sshd.scp.client.ScpClientCreator;
-import org.apache.sshd.scp.common.ScpTransferEventListener;
 import org.apache.sshd.scp.server.ScpCommandFactory;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.password.AcceptAllPasswordAuthenticator;

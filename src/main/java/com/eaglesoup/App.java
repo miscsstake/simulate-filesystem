@@ -12,10 +12,9 @@ public class App {
         try {
             ScpServerFactory scpServerFactory = new ScpServerFactory();
             scpServerFactory.run();
-
-            //ssh
-            SshServerFactory sshServerFactory = new SshServerFactory();
-            sshServerFactory.run();
+//            //ssh
+//            SshServerFactory sshServerFactory = new SshServerFactory();
+//            sshServerFactory.run();
 
             //shell
             ShellCommand shell = new ShellCommand(MosOs.fileSystem().getDefaultRootPath());

@@ -1,5 +1,6 @@
 package com.eaglesoup.ssh;
 
+import com.eaglesoup.os.MosOs;
 import com.eaglesoup.shell.ShellCommand;
 import org.apache.sshd.common.channel.PtyMode;
 import org.apache.sshd.server.Environment;
@@ -7,8 +8,6 @@ import org.apache.sshd.server.ExitCallback;
 import org.apache.sshd.server.Signal;
 import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.Command;
-import org.jline.reader.LineReader;
-import org.jline.reader.LineReaderBuilder;
 import org.jline.terminal.Attributes;
 import org.jline.terminal.Size;
 import org.jline.terminal.Terminal;
@@ -16,15 +15,10 @@ import org.jline.terminal.TerminalBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.PrintStream;
-import java.util.List;
 import java.util.Map;
 
-import static com.eaglesoup.util.ParseUtils.pipeCommand;
-import static com.eaglesoup.util.ParseUtils.parseCommand;
 
 public class SshShellCommand extends ShellCommand implements Command {
     private static final Logger LOGGER = LoggerFactory.getLogger(SshShellCommand.class);
@@ -46,7 +40,7 @@ public class SshShellCommand extends ShellCommand implements Command {
 
     @Override
     public void setErrorStream(OutputStream err) {
-        this.err = new PrintStream(err);
+        this.err = err;
     }
 
     @Override
@@ -56,7 +50,7 @@ public class SshShellCommand extends ShellCommand implements Command {
 
     @Override
     public void setOutputStream(OutputStream out) {
-        this.out = new PrintStream(out);
+        this.out = out;
     }
 
     @Override
@@ -185,37 +179,50 @@ public class SshShellCommand extends ShellCommand implements Command {
 
     @Override
     public void run() {
-        LineReader reader = LineReaderBuilder.builder()
-                .terminal(terminal)
-                .option(LineReader.Option.DISABLE_EVENT_EXPANSION, true)
-                .build();
-        while (true) {
-            String command = reader.readLine(String.format("root@mos-css:%s$ ", curr.getAbstractPath().equals("/") ? "/" : curr.getName()));
-            if (command.length() == 0) {
-                continue;
-            }
-            if ("exit".equals(command) || "bye".equals(command)) {
-                println("good bye~");
-                try {
-                    session.getSession().close();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-                break;
-            }
-            try {
-                /*
-                 * 1. 通过管道符分割的命令
-                 * 2. 通过多线程创建管道
-                 * 3. 子命令之间使用pipedInputStream和pipedOutputStream进行连接起来
-                 * 4. 通过多线程执行命令
-                 */
-                List<String[]> args = pipeCommand(parseCommand(command));
-                PipeCommand pipeCommand = new PipeCommand(args);
-                pipeCommand.call(this);
-            } catch (Exception e) {
-                println(e.getMessage());
-            }
-        }
+        test01();
+    }
+
+    private void test01() {
+//        LineReader reader = LineReaderBuilder.builder()
+//                .terminal(terminal)
+//                .option(LineReader.Option.DISABLE_EVENT_EXPANSION, true)
+//                .build();
+//        while (true) {
+//            String command = reader.readLine(String.format("root@mos-css:%s$ ", curr.getAbstractPath().equals("/") ? "/" : curr.getName()));
+//            if (command.length() == 0) {
+//                continue;
+//            }
+//            if ("exit".equals(command) || "bye".equals(command)) {
+//                println("good bye~");
+//                try {
+//                    session.getSession().close();
+//                } catch (IOException e) {
+//                    throw new RuntimeException(e);
+//                }
+//                break;
+//            }
+//            try {
+//                /*
+//                 * 1. 通过管道符分割的命令
+//                 * 2. 通过多线程创建管道
+//                 * 3. 子命令之间使用pipedInputStream和pipedOutputStream进行连接起来
+//                 * 4. 通过多线程执行命令
+//                 */
+//                List<String[]> args = pipeCommand(parseCommand(command));
+//                PipeCommand pipeCommand = new PipeCommand(args);
+//                pipeCommand.call(this);
+//            } catch (Exception e) {
+//                println(e.getMessage());
+//            }
+//        }
+
+
+
+        ShellCommand shell = new ShellCommand(MosOs.fileSystem().getDefaultRootPath());
+        shell.run();
+    }
+
+    private void test02() {
+
     }
 }

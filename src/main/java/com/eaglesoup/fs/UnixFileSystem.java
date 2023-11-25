@@ -2,7 +2,6 @@ package com.eaglesoup.fs;
 
 import com.eaglesoup.device.IDisk;
 import com.eaglesoup.fs.fat.*;
-import com.eaglesoup.fs.fat.layout.DirectoryEntity;
 import com.eaglesoup.fs.fat.layout.Fat16;
 
 import java.util.ArrayList;
