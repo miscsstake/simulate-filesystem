@@ -1,6 +1,9 @@
-package com.eaglesoup.ssh;
+package com.eaglesoup.applayer;
 
+import com.eaglesoup.boot.UnixCommandExecutor;
+import com.eaglesoup.boot.UnixProcess;
 import com.eaglesoup.shell.ShellCommand;
+import com.eaglesoup.ssh.SshShellCommand;
 import org.apache.sshd.common.channel.PtyMode;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
@@ -22,21 +25,21 @@ import java.io.OutputStream;
 import java.util.List;
 import java.util.Map;
 
-import static com.eaglesoup.util.ParseUtils.pipeCommand;
 import static com.eaglesoup.util.ParseUtils.parseCommand;
+import static com.eaglesoup.util.ParseUtils.pipeCommand;
 
-public class SshShellCommand extends ShellCommand implements Command {
+
+public class SshCommandV2 implements Command, UnixProcess {
     private static final Logger LOGGER = LoggerFactory.getLogger(SshShellCommand.class);
-    private Terminal terminal;
     private ChannelSession session;
+    private Terminal terminal;
+    private LineReader lineReader;
 
-    public SshShellCommand(String path) {
-        super(path);
-    }
+    private InputStream in;
+    private OutputStream out;
+    private OutputStream err;
+    private ExitCallback callback;
 
-    public SshShellCommand(String path, InputStream in, OutputStream out, OutputStream err) {
-        super(path, in, out, err);
-    }
 
     @Override
     public void setExitCallback(ExitCallback callback) {
@@ -59,14 +62,14 @@ public class SshShellCommand extends ShellCommand implements Command {
     }
 
     @Override
-    public void start(ChannelSession channel, Environment env) {
+    public void start(ChannelSession channel, Environment env) throws IOException {
         try {
             this.session = channel;
             terminal = TerminalBuilder.builder()
                     .name("Mos SSH")
                     .type(env.getEnv().get("TERM"))
                     .system(false)
-                    .streams(in, out)
+                    .streams(this.in, this.out)
                     .build();
             terminal.setSize(new Size(
                     Integer.parseInt(env.getEnv().get("COLUMNS")),
@@ -164,8 +167,8 @@ public class SshShellCommand extends ShellCommand implements Command {
                     },
                     Signal.WINCH);
             this.out = terminal.output();
-//            new Thread(this).start();
-            test01();
+//            execute();
+            new Thread(() -> execute()).start();
         } catch (Exception e) {
             LOGGER.error(e.getMessage());
         }
@@ -173,53 +176,57 @@ public class SshShellCommand extends ShellCommand implements Command {
 
     @Override
     public void destroy(ChannelSession channel) throws Exception {
-        if (callback != null) {
-            out.flush();
-            err.flush();
-            in.close();
-            out.close();
-            err.close();
-            callback.onExit(0);
+        if (this.callback != null) {
+            this.out.flush();
+            this.err.flush();
+            this.in.close();
+            this.out.close();
+            this.err.close();
+            this.callback.onExit(0);
         }
     }
 
-//    @Override
-//    public void run() {
-//        test01();
-//    }
+    @Override
+    public InputStream getInputStream() {
+        return this.in;
+    }
 
-    private void test01() {
-        LineReader reader = LineReaderBuilder.builder()
+    @Override
+    public OutputStream getOutputStream() {
+        return this.out;
+    }
+
+    @Override
+    public OutputStream getErrorStream() {
+        return this.err;
+    }
+
+    @Override
+    public ExitCallback getExitCallback() {
+        return this.callback;
+    }
+
+    @Override
+    public String getLineReaderPrompt() {
+        if (this.lineReader == null) {
+            setLineReader();
+        }
+        return this.lineReader.readLine();
+    }
+
+    @Override
+    public String getCurPath() {
+        return "/";
+    }
+
+    private void setLineReader() {
+        this.lineReader = LineReaderBuilder.builder()
                 .terminal(terminal)
                 .option(LineReader.Option.DISABLE_EVENT_EXPANSION, true)
                 .build();
-        while (true) {
-            String command = reader.readLine(String.format("root@mos-css:%s$ ", curr.getAbstractPath().equals("/") ? "/" : curr.getName()));
-            if (command.length() == 0) {
-                continue;
-            }
-            if ("exit".equals(command) || "bye".equals(command)) {
-                println("good bye~");
-                try {
-                    session.getSession().close();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-                break;
-            }
-            try {
-                /*
-                 * 1. 通过管道符分割的命令
-                 * 2. 通过多线程创建管道
-                 * 3. 子命令之间使用pipedInputStream和pipedOutputStream进行连接起来
-                 * 4. 通过多线程执行命令
-                 */
-                List<String[]> args = pipeCommand(parseCommand(command));
-                PipeCommand pipeCommand = new PipeCommand(args);
-                pipeCommand.call(this);
-            } catch (Exception e) {
-                println(e.getMessage());
-            }
-        }
+    }
+
+    public void execute() {
+        new UnixCommandExecutor(this).fire();
     }
 }

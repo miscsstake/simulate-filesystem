@@ -9,7 +9,6 @@ public class PrintCommand extends Thread {
     public PrintCommand(InputStream in, OutputStream out) {
         this.in = in;
         this.out = out;
-
     }
 
     @Override
@@ -19,6 +18,7 @@ public class PrintCommand extends Thread {
         try {
             while ((line = reader.readLine()) != null) {
                 out.write(line.getBytes());
+                out.write("\n".getBytes());
             }
         } catch (IOException e) {
             e.printStackTrace();

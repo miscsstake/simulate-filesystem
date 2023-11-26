@@ -1,6 +1,5 @@
 package com.eaglesoup.bin;
 
-import com.eaglesoup.fs.UnixFile;
 import picocli.CommandLine;
 
 import java.io.*;
