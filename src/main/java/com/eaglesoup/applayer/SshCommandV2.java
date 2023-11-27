@@ -1,9 +1,8 @@
 package com.eaglesoup.applayer;
 
-import com.eaglesoup.boot.UnixCommandExecutor;
-import com.eaglesoup.boot.UnixProcess;
+import com.eaglesoup.os.boot.UnixCommandExecutor;
+import com.eaglesoup.os.boot.UnixProcess;
 import com.eaglesoup.fs.UnixFile;
-import com.eaglesoup.ssh.SshShellCommand;
 import org.apache.sshd.common.channel.PtyMode;
 import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;

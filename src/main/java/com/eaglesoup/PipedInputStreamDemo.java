@@ -3,7 +3,7 @@ package com.eaglesoup;
 import com.eaglesoup.applayer.ShellCommandV2;
 import com.eaglesoup.device.VirtualDisk;
 import com.eaglesoup.os.MosOs;
-import com.eaglesoup.ssh.SshServerFactory;
+import com.eaglesoup.applayer.SshServerFactory;
 
 public class PipedInputStreamDemo {
 

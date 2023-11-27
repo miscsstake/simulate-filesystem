@@ -1,7 +1,7 @@
 package com.eaglesoup.applayer;
 
-import com.eaglesoup.boot.UnixCommandExecutor;
-import com.eaglesoup.boot.UnixProcess;
+import com.eaglesoup.os.boot.UnixCommandExecutor;
+import com.eaglesoup.os.boot.UnixProcess;
 import com.eaglesoup.fs.UnixFile;
 import com.eaglesoup.os.MosOs;
 
