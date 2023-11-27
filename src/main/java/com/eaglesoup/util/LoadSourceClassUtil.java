@@ -1,13 +1,11 @@
 package com.eaglesoup.util;
 
 import javax.tools.*;
-import java.io.BufferedReader;
-import java.io.File;
+import java.io.*;
 
-import java.io.FileReader;
-import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.Arrays;
 import java.util.Collections;
 
 public class LoadSourceClassUtil {
@@ -20,11 +18,12 @@ public class LoadSourceClassUtil {
         //比如：/user/Test.java
         String clzNameFile = String.format("%s%s.java", path, fstUpperClzName);
 
+        Iterable<String> options = Arrays.asList("-d", path + "/tgt");
         JavaCompiler.CompilationTask task = compiler.getTask(
                 null,
                 null,
                 diagnostics,
-                null,
+                options,
                 null,
                 compiler.getStandardFileManager(null, null, null)
                         .getJavaFileObjectsFromStrings(Collections.singletonList(clzNameFile))); // Test.java 是我们要编译的文件
@@ -44,10 +43,8 @@ public class LoadSourceClassUtil {
                 throw new RuntimeException(e);
             }
         } else {
-            getErrorMsg(diagnostics);
-            //todo 老鹰 这里需要输出到 OutputStream
+            throw new IllegalStateException(getErrorMsg(diagnostics));
         }
-        return null;
     }
 
     public static String getErrorMsg(DiagnosticCollector<JavaFileObject> diagnostics) {

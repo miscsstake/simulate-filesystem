@@ -164,8 +164,7 @@ public class SshShellCommand extends ShellCommand implements Command {
                     },
                     Signal.WINCH);
             this.out = terminal.output();
-//            new Thread(this).start();
-            test01();
+            new Thread(this).start();
         } catch (Exception e) {
             LOGGER.error(e.getMessage());
         }
@@ -183,10 +182,10 @@ public class SshShellCommand extends ShellCommand implements Command {
         }
     }
 
-//    @Override
-//    public void run() {
-//        test01();
-//    }
+    @Override
+    public void run() {
+        test01();
+    }
 
     private void test01() {
         LineReader reader = LineReaderBuilder.builder()

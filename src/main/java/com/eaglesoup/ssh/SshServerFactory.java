@@ -13,8 +13,8 @@ public class SshServerFactory implements Runnable {
         SshServer sshd = SshServer.setUpDefaultServer();
         sshd.setPort(20333);
         //ssh
-//        sshd.setShellFactory(channelSession -> new SshShellCommand("/"));
-        sshd.setShellFactory(channelSession -> new SshCommandV2());
+        sshd.setShellFactory(channelSession -> new SshShellCommand("/"));
+//        sshd.setShellFactory(channelSession -> new SshCommandV2());
         sshd.setPasswordAuthenticator(AcceptAllPasswordAuthenticator.INSTANCE);
         sshd.setKeyPairProvider(new SimpleGeneratorHostKeyProvider(new File("key.ser").toPath()));
         try {

@@ -8,20 +8,18 @@ import picocli.CommandLine;
 
 import java.io.*;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 public class UnixCommandExecutor {
     private final String classesDir = "/Users/ke/Desktop/company/project/simulate-filesystem/src/main/java/com/eaglesoup/bin/";
-    protected UnixFile curr;
-
     private final UnixProcess unixProcess;
+    private UnixFile curr;
 
     public UnixCommandExecutor(UnixProcess unixProcess) {
         this.unixProcess = unixProcess;
-        this.curr = new UnixFile(unixProcess.getCurPath());
+        this.curr = unixProcess.getCurPath();
     }
 
     public void fire() {
@@ -38,6 +36,7 @@ public class UnixCommandExecutor {
                 break;
             }
             try {
+
                 /*
                  * 1. 通过管道符分割的命令
                  * 2. 通过多线程创建管道
@@ -50,6 +49,7 @@ public class UnixCommandExecutor {
                 CommandUtil.println(unixProcess.getOutputStream(), e.getMessage());
             }
         }
+        unixProcess.exitCallback();
     }
 
     private void executeCommands(List<String[]> pipeArgs) {
@@ -89,23 +89,38 @@ public class UnixCommandExecutor {
      * 1表示程序或者命令执行失败：比如文件不存在、权限不足，参数错误等
      * -1表示一些严重的错误
      */
-    private void resolveCommand(String[] args, InputStream in, OutputStream out) {
+    private int resolveCommand(String[] args, InputStream in, OutputStream out) {
         if (args.length == 0) {
-            return;
+            return 0;
         }
         String clzName = args[0].trim();
-        Class<?> clz = LoadSourceClassUtil.loadClass(classesDir, clzName);
+        int exitCode = -1;
+        String msg = clzName + "执行失败";
         try {
-            assert clz != null;
-            Constructor<?> constructor = clz.getConstructor(InputStream.class, OutputStream.class);
-            Object instance = constructor.newInstance(in, out);
+            Class<?> clz = LoadSourceClassUtil.loadClass(classesDir, clzName);
+            Constructor<?> constructor = clz.getConstructor(InputStream.class, OutputStream.class, UnixFile.class);
+            Object instance = constructor.newInstance(in, out, curr);
             //String[] args 移除第一个参数
             args = Arrays.copyOfRange(args, 1, args.length);
-            new CommandLine(instance).execute(args);
-        } catch (NoSuchMethodException | IllegalAccessException | InstantiationException |
-                 InvocationTargetException e) {
-            CommandUtil.println(out, e.getMessage());
+            exitCode = new CommandLine(instance).execute(args);
+            if (instance instanceof UnixProcess) {
+                UnixProcess commandProcess = (UnixProcess) instance;
+                curr = commandProcess.getCurPath();
+                commandProcess.exitCallback();
+            }
+        } catch (Exception e) {
+            msg = e.getMessage();
         }
+        if (exitCode != 0) {
+            try {
+                out.write(msg.getBytes());
+                out.flush();
+                out.close();
+            } catch (IOException e) {
+                return -1;
+            }
+        }
+        return 0;
     }
 
     private void addPrintCommand(List<Thread> threads, PipedOutputStream lastOutputStream) throws IOException {

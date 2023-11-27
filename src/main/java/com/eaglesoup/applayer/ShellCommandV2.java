@@ -2,14 +2,16 @@ package com.eaglesoup.applayer;
 
 import com.eaglesoup.boot.UnixCommandExecutor;
 import com.eaglesoup.boot.UnixProcess;
+import com.eaglesoup.fs.UnixFile;
 import com.eaglesoup.os.MosOs;
-import org.apache.sshd.server.ExitCallback;
 
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Scanner;
 
 public class ShellCommandV2 implements UnixProcess {
+    Scanner scanner = new Scanner(getInputStream());
+
     public void execute() {
         new UnixCommandExecutor(this).fire();
     }
@@ -30,18 +32,19 @@ public class ShellCommandV2 implements UnixProcess {
     }
 
     @Override
-    public ExitCallback getExitCallback() {
-        return null;
+    public void exitCallback() {
+        if (scanner != null) {
+            scanner.close();
+        }
     }
 
     @Override
     public String getLineReaderPrompt() {
-        Scanner scanner = new Scanner(getInputStream());
         return scanner.nextLine();
     }
 
     @Override
-    public String getCurPath() {
-        return MosOs.fileSystem().getDefaultRootPath();
+    public UnixFile getCurPath() {
+        return new UnixFile(MosOs.fileSystem().getDefaultRootPath());
     }
 }

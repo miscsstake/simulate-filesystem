@@ -2,7 +2,7 @@ package com.eaglesoup.applayer;
 
 import com.eaglesoup.boot.UnixCommandExecutor;
 import com.eaglesoup.boot.UnixProcess;
-import com.eaglesoup.shell.ShellCommand;
+import com.eaglesoup.fs.UnixFile;
 import com.eaglesoup.ssh.SshShellCommand;
 import org.apache.sshd.common.channel.PtyMode;
 import org.apache.sshd.server.Environment;
@@ -22,18 +22,13 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.List;
 import java.util.Map;
-
-import static com.eaglesoup.util.ParseUtils.parseCommand;
-import static com.eaglesoup.util.ParseUtils.pipeCommand;
-
 
 public class SshCommandV2 implements Command, UnixProcess {
     private static final Logger LOGGER = LoggerFactory.getLogger(SshShellCommand.class);
-    private ChannelSession session;
     private Terminal terminal;
     private LineReader lineReader;
+    private ChannelSession session;
 
     private InputStream in;
     private OutputStream out;
@@ -63,8 +58,8 @@ public class SshCommandV2 implements Command, UnixProcess {
 
     @Override
     public void start(ChannelSession channel, Environment env) throws IOException {
+        this.session = channel;
         try {
-            this.session = channel;
             terminal = TerminalBuilder.builder()
                     .name("Mos SSH")
                     .type(env.getEnv().get("TERM"))
@@ -167,8 +162,7 @@ public class SshCommandV2 implements Command, UnixProcess {
                     },
                     Signal.WINCH);
             this.out = terminal.output();
-//            execute();
-            new Thread(() -> execute()).start();
+            new Thread(this::execute).start();
         } catch (Exception e) {
             LOGGER.error(e.getMessage());
         }
@@ -202,8 +196,12 @@ public class SshCommandV2 implements Command, UnixProcess {
     }
 
     @Override
-    public ExitCallback getExitCallback() {
-        return this.callback;
+    public void exitCallback() {
+        try {
+            this.session.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -215,8 +213,8 @@ public class SshCommandV2 implements Command, UnixProcess {
     }
 
     @Override
-    public String getCurPath() {
-        return "/";
+    public UnixFile getCurPath() {
+        return new UnixFile("/");
     }
 
     private void setLineReader() {

@@ -1,6 +1,6 @@
 package com.eaglesoup.boot;
 
-import org.apache.sshd.server.ExitCallback;
+import com.eaglesoup.fs.UnixFile;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -12,9 +12,9 @@ public interface UnixProcess {
 
     OutputStream getErrorStream();
 
-    ExitCallback getExitCallback();
+    void exitCallback();
 
     String getLineReaderPrompt();
 
-    String getCurPath();
+    UnixFile getCurPath();
 }
