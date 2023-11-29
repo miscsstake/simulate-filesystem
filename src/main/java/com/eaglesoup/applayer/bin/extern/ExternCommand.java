@@ -25,10 +25,9 @@ public class ExternCommand extends BaseCommand {
         Binding groovyBinding = new Binding();
         groovyBinding.setVariable("args", args);
         groovyBinding.setVariable("out", out);
-        groovyBinding.setVariable("in", in);
+        groovyBinding.setVariable("input", in);
 
         GroovyShell groovyShell = new GroovyShell(groovyBinding);
-//        String scriptContent = "out.write(\"Hello World!\" + args[0] + \"\\n\"); out.write(\"end\");";
         Script script = groovyShell.parse(scriptContent);
         script.run();
     }

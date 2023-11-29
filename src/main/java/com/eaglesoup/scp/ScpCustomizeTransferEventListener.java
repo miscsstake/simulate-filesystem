@@ -23,16 +23,27 @@ public class ScpCustomizeTransferEventListener implements ScpTransferEventListen
     private void writeFs(Path path) {
         String tmpFilePath = path.toUri().getPath();
         String filePath = tmpFilePath.substring("/tmp".length());
+
         File file = new File(filePath);
+        UnixFile unixFile = new UnixFile(filePath);
+        if (unixFile.exist()) {
+            unixFile.delete();
+        }
+
+
         mkdir(file.getParentFile());
+
+
         UnixFileOutputStream out = new UnixFileOutputStream(MosOs.fileSystem().open(file.getAbsolutePath()));
 
         //读取file数据流
         try (FileInputStream fis = new FileInputStream(tmpFilePath)) {
+
+
             int content;
             while ((content = fis.read()) != -1) {
                 // 将字节转换为字符
-                out.write((char)content);
+                out.write((char) content);
             }
         } catch (IOException e) {
             e.printStackTrace();
