@@ -24,7 +24,7 @@ import java.io.OutputStream;
 import java.util.Map;
 
 public class SshCommandV2 implements Command, UnixProcess {
-    private static final Logger LOGGER = LoggerFactory.getLogger(SshShellCommand.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SshCommandV2.class);
     private Terminal terminal;
     private LineReader lineReader;
     private ChannelSession session;

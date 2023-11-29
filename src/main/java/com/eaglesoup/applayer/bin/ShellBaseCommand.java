@@ -3,9 +3,7 @@ package com.eaglesoup.applayer.bin.base;
 import com.eaglesoup.os.boot.UnixProcess;
 import com.eaglesoup.fs.UnixFile;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.util.concurrent.Callable;
 
 public abstract class ShellBaseCommand implements UnixProcess, Callable<Integer> {
@@ -37,8 +35,13 @@ public abstract class ShellBaseCommand implements UnixProcess, Callable<Integer>
     @Override
     public void exitCallback() {
         try {
-            this.in.close();
-            this.out.close();
+            this.out.flush();
+            if (this.in instanceof PipedInputStream) {
+                this.in.close();
+            }
+            if (this.out instanceof PipedOutputStream) {
+                this.out.close();
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

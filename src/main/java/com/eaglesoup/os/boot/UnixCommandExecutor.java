@@ -8,12 +8,13 @@ import picocli.CommandLine;
 
 import java.io.*;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 public class UnixCommandExecutor {
-    private final String classesDir = "/Users/ke/Desktop/company/project/simulate-filesystem/src/main/java/com/eaglesoup/bin/";
+    private final String classesDir = "/Users/ke/Desktop/company/project/simulate-filesystem/src/main/java/com/eaglesoup/applayer/bin/";
     private final UnixProcess unixProcess;
     private UnixFile curr;
 
@@ -54,18 +55,32 @@ public class UnixCommandExecutor {
 
     private void executeCommands(List<String[]> pipeArgs) {
         List<Thread> threads = new ArrayList<>();
-        PipedOutputStream lastOutputStream = null;
         try {
+            PipedOutputStream lastOut = null;
+            int i = 0;
             for (String[] args : pipeArgs) {
-                PipedInputStream is = new PipedInputStream();
-                PipedOutputStream os = new PipedOutputStream();
-                if (lastOutputStream != null) {
-                    lastOutputStream.connect(is);
+                if (i == 0) {
+                    if (i == pipeArgs.size() - 1) {
+                        threads.add(new Thread(() -> resolveCommand(args, unixProcess.getInputStream(), unixProcess.getOutputStream())));
+                    } else {
+                        PipedOutputStream out = new PipedOutputStream();
+                        InputStream in = unixProcess.getInputStream();
+                        threads.add(new Thread(() -> resolveCommand(args, in, out)));
+                        lastOut = out;
+                    }
+                } else if (i == pipeArgs.size() - 1) {
+                    OutputStream out = unixProcess.getOutputStream();
+                    InputStream in = new PipedInputStream(lastOut);
+                    threads.add(new Thread(() -> resolveCommand(args, in, out)));
+                } else {
+                    InputStream in = new PipedInputStream(lastOut);
+                    lastOut = new PipedOutputStream();
+                    PipedOutputStream finalLastOut = lastOut;
+                    threads.add(new Thread(() -> resolveCommand(args, in, finalLastOut)));
                 }
-                threads.add(new Thread(() -> resolveCommand(args, is, os)));
-                lastOutputStream = os;
+                i++;
             }
-            addPrintCommand(threads, lastOutputStream);
+
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -80,7 +95,6 @@ public class UnixCommandExecutor {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-
     }
 
     /**
@@ -94,31 +108,20 @@ public class UnixCommandExecutor {
             return 0;
         }
         String clzName = args[0].trim();
-        int exitCode = -1;
-        String msg = clzName + "执行失败";
         try {
             Class<?> clz = LoadSourceClassUtil.loadClass(classesDir, clzName);
             Constructor<?> constructor = clz.getConstructor(InputStream.class, OutputStream.class, UnixFile.class);
             Object instance = constructor.newInstance(in, out, curr);
             //String[] args 移除第一个参数
             args = Arrays.copyOfRange(args, 1, args.length);
-            exitCode = new CommandLine(instance).execute(args);
+            new CommandLine(instance).execute(args);
             if (instance instanceof UnixProcess) {
                 UnixProcess commandProcess = (UnixProcess) instance;
                 curr = commandProcess.getCurPath();
-                commandProcess.exitCallback();
+//                commandProcess.exitCallback();
             }
         } catch (Exception e) {
-            msg = e.getMessage();
-        }
-        if (exitCode != 0) {
-            try {
-                out.write(msg.getBytes());
-                out.flush();
-                out.close();
-            } catch (IOException e) {
-                return -1;
-            }
+            e.printStackTrace();
         }
         return 0;
     }
@@ -127,7 +130,7 @@ public class UnixCommandExecutor {
         if (lastOutputStream != null) {
             PipedInputStream is = new PipedInputStream();
             lastOutputStream.connect(is);
-            threads.add(new PrintCommand(is, unixProcess.getOutputStream()));
+//            threads.add(new PrintCommand(is, unixProcess.getOutputStream()));
         }
     }
 }

@@ -20,8 +20,9 @@ public class Grep extends ShellBaseCommand {
 
     @Override
     public Integer call0() {
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(this.in));
-             BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(this.out))) {
+        try {
+            BufferedReader br = new BufferedReader(new InputStreamReader(this.in));
+            BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(this.out));
 
             String line;
             Pattern pattern = Pattern.compile(regex);
@@ -29,11 +30,12 @@ public class Grep extends ShellBaseCommand {
                 Matcher matcher = pattern.matcher(line);
                 if (matcher.find()) {
                     bw.write(line);
+                    bw.newLine();
                 }
             }
             bw.flush();
         } catch (IOException e) {
-            return -1;
+            e.printStackTrace();
         }
         return 0;
     }

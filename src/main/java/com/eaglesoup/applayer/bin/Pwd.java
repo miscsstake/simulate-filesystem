@@ -14,7 +14,8 @@ public class Pwd extends ShellBaseCommand {
 
     @Override
     public Integer call0() {
-        try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(this.out))) {
+        try  {
+            BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(this.out));
             bw.write(this.curPath.getAbstractPath());
             bw.newLine();
             bw.flush();

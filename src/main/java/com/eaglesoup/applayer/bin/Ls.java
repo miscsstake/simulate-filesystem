@@ -36,8 +36,8 @@ public class Ls extends ShellBaseCommand {
     private void printPath(UnixFile file) {
         String format = "%11s %10s %s";
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
-
-        try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(this.out))) {
+        try {
+            BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(this.out));
             if (file.exist()) {
                 for (UnixFile p : file.listFiles()) {
                     String filename = p.isDir() ? p.getName() + "/" : p.getName();

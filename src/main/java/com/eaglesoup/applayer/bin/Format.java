@@ -18,7 +18,8 @@ public class Format extends ShellBaseCommand {
     public Integer call0() {
         MosOs.fileSystem().format();
         this.curPath = new UnixFile("/");
-        try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(this.out))) {
+        try {
+            BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(this.out));
             bw.write("disk format success");
             bw.newLine();
             bw.flush();

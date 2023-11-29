@@ -46,7 +46,8 @@ public class Echo extends ShellBaseCommand {
     }
 
     public Integer execute(OutputStream out) {
-        try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(out))) {
+        try {
+            BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(out));
             bw.write(this.message);
             bw.newLine();
             bw.flush();
