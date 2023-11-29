@@ -1,4 +1,4 @@
-package com.eaglesoup.applayer.bin;
+package com.eaglesoup.applayer.bin.inner;
 
 import com.eaglesoup.applayer.bin.base.BaseCommand;
 import com.eaglesoup.fs.UnixFile;
@@ -7,14 +7,14 @@ import picocli.CommandLine;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+@CommandLine.Command(name = "rm", helpCommand = true, description = "删除文件")
+public class RmCommand extends BaseCommand {
 
-@CommandLine.Command(name = "mkdir", mixinStandardHelpOptions = true, description = "创建目录")
-public class MkdirCommand extends BaseCommand {
-    @CommandLine.Parameters(paramLabel = "目录名称")
+    @CommandLine.Parameters(paramLabel = "path")
     private String path;
 
     public void call0(InputStream in, OutputStream out) {
         UnixFile file = new UnixFile(parent.curPath.get(), path);
-        file.mkdir();
+        file.delete();
     }
 }

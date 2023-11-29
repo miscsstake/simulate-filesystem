@@ -42,7 +42,7 @@ public class UnixFat16FileInputStream extends InputStream {
             pos = 0;
         }
         count++;
-        return buffer[pos++];
+        return buffer[pos++] & 0xff;
     }
 
     private int nextSectorIdx() {

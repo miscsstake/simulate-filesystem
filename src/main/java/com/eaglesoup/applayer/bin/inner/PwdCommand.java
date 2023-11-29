@@ -1,20 +1,17 @@
-package com.eaglesoup.applayer.bin;
+package com.eaglesoup.applayer.bin.inner;
 
 import com.eaglesoup.applayer.bin.base.BaseCommand;
-import com.eaglesoup.fs.UnixFile;
-import com.eaglesoup.os.MosOs;
 import picocli.CommandLine;
 
 import java.io.*;
 
-@CommandLine.Command(name = "format", description = "格式化")
-public class FormatCommand extends BaseCommand {
+@CommandLine.Command(name = "pwd", helpCommand = true, description = "显示当前目录路径")
+public class PwdCommand extends BaseCommand {
+
     public void call0(InputStream in, OutputStream out) {
-        MosOs.fileSystem().format();
-        parent.curPath.set(new UnixFile("/"));
         try {
             BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(out));
-            bw.write("disk format success");
+            bw.write(parent.curPath.get().getAbstractPath());
             bw.newLine();
             bw.flush();
         } catch (IOException e) {

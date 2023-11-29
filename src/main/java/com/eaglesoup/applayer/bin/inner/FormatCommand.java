@@ -1,20 +1,20 @@
-package com.eaglesoup.applayer.bin;
+package com.eaglesoup.applayer.bin.inner;
 
 import com.eaglesoup.applayer.bin.base.BaseCommand;
+import com.eaglesoup.fs.UnixFile;
+import com.eaglesoup.os.MosOs;
 import picocli.CommandLine;
 
 import java.io.*;
 
-@CommandLine.Command(name = "echo", mixinStandardHelpOptions = true, description = "模拟linux的echo命令")
-public class EchoCommand extends BaseCommand {
-    @CommandLine.Parameters(index = "0..*", description = "输出的内容")
-    private String message;
-
-    @Override
+@CommandLine.Command(name = "format", description = "格式化")
+public class FormatCommand extends BaseCommand {
     public void call0(InputStream in, OutputStream out) {
+        MosOs.fileSystem().format();
+        parent.curPath.set(new UnixFile("/"));
         try {
             BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(out));
-            bw.write(this.message);
+            bw.write("disk format success");
             bw.newLine();
             bw.flush();
         } catch (IOException e) {

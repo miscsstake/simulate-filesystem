@@ -7,6 +7,7 @@ import org.apache.sshd.common.session.Session;
 import org.apache.sshd.scp.common.ScpTransferEventListener;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
@@ -25,13 +26,16 @@ public class ScpCustomizeTransferEventListener implements ScpTransferEventListen
         File file = new File(filePath);
         mkdir(file.getParentFile());
         UnixFileOutputStream out = new UnixFileOutputStream(MosOs.fileSystem().open(file.getAbsolutePath()));
-        try (Scanner scanner = new Scanner(path)) {
-            while (scanner.hasNextLine()) {
-                String line = scanner.nextLine();
-                out.write(line.getBytes());
+
+        //读取file数据流
+        try (FileInputStream fis = new FileInputStream(tmpFilePath)) {
+            int content;
+            while ((content = fis.read()) != -1) {
+                // 将字节转换为字符
+                out.write((char)content);
             }
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            e.printStackTrace();
         }
         out.close();
     }

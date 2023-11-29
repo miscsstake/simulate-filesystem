@@ -1,4 +1,4 @@
-package com.eaglesoup.applayer.bin;
+package com.eaglesoup.applayer.bin.inner;
 
 import com.eaglesoup.applayer.bin.base.BaseCommand;
 import picocli.CommandLine;

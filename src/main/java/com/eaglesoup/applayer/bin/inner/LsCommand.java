@@ -1,4 +1,4 @@
-package com.eaglesoup.applayer.bin;
+package com.eaglesoup.applayer.bin.inner;
 
 import com.eaglesoup.applayer.bin.base.BaseCommand;
 import com.eaglesoup.fs.UnixFile;
@@ -8,7 +8,6 @@ import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.Callable;
 
 @CommandLine.Command(name = "ls", aliases = "ll", mixinStandardHelpOptions = true, description = "查询文件列表")
 public class LsCommand extends BaseCommand {

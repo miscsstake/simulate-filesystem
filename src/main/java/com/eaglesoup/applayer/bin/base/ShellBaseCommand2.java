@@ -1,14 +1,12 @@
 package com.eaglesoup.applayer.bin.base;
 
 
-import com.eaglesoup.applayer.bin.*;
+import com.eaglesoup.applayer.bin.extern.ExternCommand;
+import com.eaglesoup.applayer.bin.inner.*;
 import com.eaglesoup.fs.UnixFile;
 import picocli.CommandLine;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.PipedOutputStream;
+import java.io.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -23,7 +21,8 @@ import java.util.concurrent.atomic.AtomicReference;
         MkdirCommand.class,
         PwdCommand.class,
         RmCommand.class,
-        TouchCommand.class
+        TouchCommand.class,
+        ExternCommand.class
 })
 public class ShellBaseCommand2 implements Callable<Integer> {
     public final InputStream in;
@@ -48,6 +47,9 @@ public class ShellBaseCommand2 implements Callable<Integer> {
             this.out.flush();
             if (this.out instanceof PipedOutputStream) {
                 this.out.close();
+            }
+            if (this.in instanceof PipedInputStream) {
+                this.in.close();
             }
         } catch (IOException e) {
             e.printStackTrace();

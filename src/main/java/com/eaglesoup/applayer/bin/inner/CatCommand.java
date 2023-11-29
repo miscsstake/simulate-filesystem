@@ -1,7 +1,6 @@
-package com.eaglesoup.applayer.bin;
+package com.eaglesoup.applayer.bin.inner;
 
 import com.eaglesoup.applayer.bin.base.BaseCommand;
-import com.eaglesoup.applayer.bin.base.ShellBaseCommand2;
 import com.eaglesoup.fs.UnixFile;
 import com.eaglesoup.fs.UnixFileInputStream;
 import picocli.CommandLine;

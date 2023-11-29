@@ -1,21 +1,27 @@
-package com.eaglesoup.os.command.impl;
+package com.eaglesoup.applayer.bin.extern;
 
+import com.eaglesoup.applayer.bin.base.BaseCommand;
 import com.eaglesoup.fs.UnixFile;
 import com.eaglesoup.fs.UnixFileInputStream;
-import com.eaglesoup.os.command.ICommandExec;
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
 import groovy.lang.Script;
+import picocli.CommandLine;
 
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.List;
 
-public class ExternalCommandFactory implements ICommandExec {
 
-    @Override
-    public int exec(InputStream in, OutputStream out, AtomicReference<UnixFile> curr, String[] args) {
-        String scriptContent = readFile(curr.get());
+@CommandLine.Command(name = "default", description = "外部默认命令")
+public class ExternCommand extends BaseCommand {
+    @CommandLine.Parameters(description = "自定义命令参数")
+    private List<String> args;
+
+    public void call0(InputStream in, OutputStream out) {
+        String fileName = args.get(0);
+        args.remove(0);
+        String scriptContent = readFile(new UnixFile(parent.curPath.get(), fileName));
         Binding groovyBinding = new Binding();
         groovyBinding.setVariable("args", args);
         groovyBinding.setVariable("out", out);
@@ -25,7 +31,6 @@ public class ExternalCommandFactory implements ICommandExec {
 //        String scriptContent = "out.write(\"Hello World!\" + args[0] + \"\\n\"); out.write(\"end\");";
         Script script = groovyShell.parse(scriptContent);
         script.run();
-        return 0;
     }
 
     private String readFile(UnixFile file) {
