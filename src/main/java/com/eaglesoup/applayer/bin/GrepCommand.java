@@ -1,6 +1,6 @@
 package com.eaglesoup.applayer.bin;
 
-import com.eaglesoup.applayer.bin.base.ShellBaseCommand;
+import com.eaglesoup.applayer.bin.base.BaseCommand;
 import com.eaglesoup.fs.UnixFile;
 import picocli.CommandLine;
 
@@ -9,20 +9,14 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @CommandLine.Command(name = "grep", description = "字符串匹配")
-public class Grep extends ShellBaseCommand {
-
-    public Grep(InputStream input, OutputStream output, UnixFile curPath) {
-        super(input, output, curPath);
-    }
-
+public class GrepCommand extends BaseCommand {
     @CommandLine.Parameters(index = "0..*", paramLabel = "regex")
     private String regex;
 
-    @Override
-    public Integer call0() {
+    public void call0(InputStream in, OutputStream out) {
         try {
-            BufferedReader br = new BufferedReader(new InputStreamReader(this.in));
-            BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(this.out));
+            BufferedReader br = new BufferedReader(new InputStreamReader(in));
+            BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(out));
 
             String line;
             Pattern pattern = Pattern.compile(regex);
@@ -37,6 +31,5 @@ public class Grep extends ShellBaseCommand {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return 0;
     }
 }
