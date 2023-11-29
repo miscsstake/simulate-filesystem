@@ -18,12 +18,12 @@ public class LoadSourceClassUtil {
         //比如：/user/Test.java
         String clzNameFile = String.format("%s%s.java", path, fstUpperClzName);
 
-        Iterable<String> options = Arrays.asList("-d", path + "/tgt");
+//        Iterable<String> options = Arrays.asList("-d", path + "/tgt");
         JavaCompiler.CompilationTask task = compiler.getTask(
                 null,
                 null,
                 diagnostics,
-                options,
+                null,
                 null,
                 compiler.getStandardFileManager(null, null, null)
                         .getJavaFileObjectsFromStrings(Collections.singletonList(clzNameFile))); // Test.java 是我们要编译的文件

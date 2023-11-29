@@ -1,20 +1,17 @@
 package com.eaglesoup.os.boot;
 
 import com.eaglesoup.fs.UnixFile;
+import com.eaglesoup.os.command.CommandResolveFactory;
 import com.eaglesoup.util.CommandUtil;
-import com.eaglesoup.util.LoadSourceClassUtil;
 import com.eaglesoup.util.ParseUtils;
-import picocli.CommandLine;
 
 import java.io.*;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class UnixCommandExecutor {
-    private final String classesDir = "/Users/ke/Desktop/company/project/simulate-filesystem/src/main/java/com/eaglesoup/applayer/bin/";
+
     private final UnixProcess unixProcess;
     private UnixFile curr;
 
@@ -45,7 +42,7 @@ public class UnixCommandExecutor {
                  * 4. 通过多线程执行命令
                  */
                 List<String[]> argsFromScan = ParseUtils.pipeCommand(ParseUtils.parseCommand(command));
-                executeCommands(argsFromScan);
+                resolveCommands(argsFromScan);
             } catch (Exception e) {
                 CommandUtil.println(unixProcess.getOutputStream(), e.getMessage());
             }
@@ -53,36 +50,35 @@ public class UnixCommandExecutor {
         unixProcess.exitCallback();
     }
 
-    private void executeCommands(List<String[]> pipeArgs) {
+    private void resolveCommands(List<String[]> pipeArgs) {
         List<Thread> threads = new ArrayList<>();
         try {
             PipedOutputStream lastOut = null;
             int i = 0;
             for (String[] args : pipeArgs) {
                 if (i == 0) {
+                    InputStream in = unixProcess.getInputStream();
                     if (i == pipeArgs.size() - 1) {
-                        threads.add(new Thread(() -> resolveCommand(args, unixProcess.getInputStream(), unixProcess.getOutputStream())));
+                        execCommand(in, unixProcess.getOutputStream(), args, threads);
                     } else {
                         PipedOutputStream out = new PipedOutputStream();
-                        InputStream in = unixProcess.getInputStream();
-                        threads.add(new Thread(() -> resolveCommand(args, in, out)));
+                        execCommand(in, out, args, threads);
                         lastOut = out;
                     }
                 } else if (i == pipeArgs.size() - 1) {
                     OutputStream out = unixProcess.getOutputStream();
                     InputStream in = new PipedInputStream(lastOut);
-                    threads.add(new Thread(() -> resolveCommand(args, in, out)));
+                    execCommand(in, out, args, threads);
                 } else {
                     InputStream in = new PipedInputStream(lastOut);
                     lastOut = new PipedOutputStream();
-                    PipedOutputStream finalLastOut = lastOut;
-                    threads.add(new Thread(() -> resolveCommand(args, in, finalLastOut)));
+                    execCommand(in, lastOut, args, threads);
                 }
                 i++;
             }
 
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            e.printStackTrace();
         }
         /*
          * 等待所有命令执行完毕
@@ -93,44 +89,17 @@ public class UnixCommandExecutor {
                 thread.join();
             }
         } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    /**
-     * 返回值：
-     * 0表示成功;
-     * 1表示程序或者命令执行失败：比如文件不存在、权限不足，参数错误等
-     * -1表示一些严重的错误
-     */
-    private int resolveCommand(String[] args, InputStream in, OutputStream out) {
-        if (args.length == 0) {
-            return 0;
-        }
-        String clzName = args[0].trim();
-        try {
-            Class<?> clz = LoadSourceClassUtil.loadClass(classesDir, clzName);
-            Constructor<?> constructor = clz.getConstructor(InputStream.class, OutputStream.class, UnixFile.class);
-            Object instance = constructor.newInstance(in, out, curr);
-            //String[] args 移除第一个参数
-            args = Arrays.copyOfRange(args, 1, args.length);
-            new CommandLine(instance).execute(args);
-            if (instance instanceof UnixProcess) {
-                UnixProcess commandProcess = (UnixProcess) instance;
-                curr = commandProcess.getCurPath();
-//                commandProcess.exitCallback();
-            }
-        } catch (Exception e) {
             e.printStackTrace();
         }
-        return 0;
     }
 
-    private void addPrintCommand(List<Thread> threads, PipedOutputStream lastOutputStream) throws IOException {
-        if (lastOutputStream != null) {
-            PipedInputStream is = new PipedInputStream();
-            lastOutputStream.connect(is);
-//            threads.add(new PrintCommand(is, unixProcess.getOutputStream()));
-        }
+    private void execCommand(InputStream in, OutputStream out, String[] args, List<Thread> threadList) {
+        Thread thread = new Thread(() -> {
+            CommandResolveFactory commandResolveFactory = new CommandResolveFactory();
+            AtomicReference<UnixFile> curr = new AtomicReference<>(this.curr);
+            commandResolveFactory.execute(in, out, curr, args);
+            this.curr = curr.get();
+        });
+        threadList.add(thread);
     }
 }

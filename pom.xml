@@ -80,6 +80,13 @@
             <version>2.10.0</version>
         </dependency>
 
+        <!--引入groovy组件-->
+        <dependency>
+            <groupId>org.codehaus.groovy</groupId>
+            <artifactId>groovy-all</artifactId>
+            <version>2.4.7</version>
+        </dependency>
+
 
     </dependencies>
 
